@@ -21,5 +21,11 @@ jupyter nbconvert --to script
 [x] niveau_nappe_eau : https://ades.eaufrance.fr/recherche
 [ ] PRELIQ_Q :
 [ ] T_Q :
-[ ] ETP_Q :
+[ ] ETP_Q : 
 [ ] Peff_All :
+
+### Calcul ETP 
+
+https://www.campbellsci.fr/blog/evapotranspiration-101
+
+Problème -> Demande les données météos.
