@@ -15,3 +15,11 @@ pip freeze > requirements.txt
 
 jupyter nbconvert --to script
 ```
+
+## Données à réccupérer
+
+[x] niveau_nappe_eau : https://ades.eaufrance.fr/recherche
+[ ] PRELIQ_Q :
+[ ] T_Q :
+[ ] ETP_Q :
+[ ] Peff_All :
