@@ -11,6 +11,11 @@ Réalisé par Baptiste RICHARD dans le cadre du Projet Junon.
 ## Commandes utiles
 
 ```bash
+python -m venv ./venv 
+venv\Scripts\activate 
+
+pip install -r ./requirements.txt
+
 pip freeze > requirements.txt
 
 jupyter nbconvert --to script
@@ -19,13 +24,16 @@ jupyter nbconvert --to script
 ## Données à réccupérer
 
 [x] niveau_nappe_eau : https://ades.eaufrance.fr/recherche
-[ ] PRELIQ_Q :
-[ ] T_Q :
-[ ] ETP_Q : 
-[ ] Peff_All :
+[x] PRELIQ_Q : https://donneespubliques.meteofrance.fr/?fond=produit&id_produit=115&id_rubrique=38
+[ ] T_Q : 
+[x] ETP_Q : https://www.data.gouv.fr/datasets/etp-fao-hargreaves
+[ ] Peff_All : peut se calculer
 
-### Calcul ETP 
+### Calcul ETP
 
 https://www.campbellsci.fr/blog/evapotranspiration-101
-
 Problème -> Demande les données météos.
+
+ou
+
+https://www.drias-climat.fr/accompagnement/sections/310
