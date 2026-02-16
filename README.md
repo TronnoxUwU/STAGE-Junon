@@ -25,7 +25,7 @@ jupyter nbconvert --to script
 
 [x] niveau_nappe_eau : https://ades.eaufrance.fr/recherche
 [x] PRELIQ_Q : https://donneespubliques.meteofrance.fr/?fond=produit&id_produit=115&id_rubrique=38
-[ ] T_Q : 
+[x] T_Q : https://donneespubliques.meteofrance.fr/?fond=produit&id_produit=115&id_rubrique=38
 [x] ETP_Q : https://www.data.gouv.fr/datasets/etp-fao-hargreaves
 [ ] Peff_All : peut se calculer
 
