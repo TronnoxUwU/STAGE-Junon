@@ -5,24 +5,35 @@ Réalisé par Baptiste RICHARD dans le cadre du Projet Junon.
 ## Liens utiles
 
 - Trello : https://trello.com/b/efFEyp9q/stage-junon
-- Ades : https://ades.eaufrance.fr/recherche
-- ERA 5 : https://data.europa.eu/data/datasets/d08cd288-a2c5-4c8d-a621-eedc33fab449~~1?locale=fr
 
 ## Commandes utiles
+
+Création du venv :
 
 ```bash
 python -m venv ./venv 
 venv\Scripts\activate 
+```
 
+Installation des dépandances :
+
+```bash
 pip install -r ./requirements.txt
+```
 
+Ajout de dépandances :
+
+```bash
 pip freeze > requirements.txt
+```
 
+Autres :
+
+```bash
 jupyter nbconvert --to script
 ```
 
 ## Données à réccupérer
-
 
 - [x] niveau_nappe_eau : https://ades.eaufrance.fr/recherche
 - [x] PRELIQ_Q : https://donneespubliques.meteofrance.fr/?fond=produit&id_produit=115&id_rubrique=38
