@@ -2,8 +2,16 @@
 
 Réalisé par Baptiste RICHARD dans le cadre du Projet Junon.
 
+## Liens utiles
+
+- Trello : https://trello.com/b/efFEyp9q/stage-junon
+- Ades : https://ades.eaufrance.fr/recherche
+- ERA 5 : https://data.europa.eu/data/datasets/d08cd288-a2c5-4c8d-a621-eedc33fab449~~1?locale=fr
+
 ## Commandes utiles
 
 ```bash
 pip freeze > requirements.txt
+
+jupyter nbconvert --to script
 ```
