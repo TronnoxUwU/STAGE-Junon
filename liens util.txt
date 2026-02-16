@@ -1,0 +1,12 @@
+https://ades.eaufrance.fr/recherche
+
+https://data.europa.eu/data/datasets/d08cd288-a2c5-4c8d-a621-eedc33fab449~~1?locale=fr
+
+etienne-lehembre (github)
+
+github , trello
+
+lehembre.etienne@gmail.com
+
+projet python jupiter notebook
+jupyter nbconvert --to script
