@@ -35,11 +35,13 @@ jupyter nbconvert --to script
 
 ## Données à réccupérer
 
+y a une api https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/chroniques?code_bss=03287X0018/S1&size=3921
+
 - [x] niveau_nappe_eau : https://ades.eaufrance.fr/recherche
-- [x] PRELIQ_Q : https://donneespubliques.meteofrance.fr/?fond=produit&id_produit=115&id_rubrique=38
-- [x] T_Q : https://donneespubliques.meteofrance.fr/?fond=produit&id_produit=115&id_rubrique=38
+- [x] PRELIQ_Q : https://donneespubliques.meteofrance.fr/?fond=produit&id_produit=115&id_rubrique=38 ou https://www.data.gouv.fr/datasets/donnees-climatologiques-de-base-mensuelles
+- [x] T_Q : https://donneespubliques.meteofrance.fr/?fond=produit&id_produit=115&id_rubrique=38 ou https://www.data.gouv.fr/datasets/donnees-climatologiques-de-base-mensuelles
 - [x] ETP_Q : https://www.data.gouv.fr/datasets/etp-fao-hargreaves
-- [ ] Peff_All : peut se calculer
+- [ ] Peff_All :
 
 ### Calcul ETP
 
@@ -49,3 +51,9 @@ Problème -> Demande les données météos.
 ou
 
 https://www.drias-climat.fr/accompagnement/sections/310
+
+### Fichier méteo
+
+Code intéressant :
+07240   TOURS
+07255   BOURGES
