@@ -52,8 +52,10 @@ ou
 
 https://www.drias-climat.fr/accompagnement/sections/310
 
-### Fichier méteo
+https://seaborn.pydata.org/generated/seaborn.heatmap.html
 
-Code intéressant :
-07240   TOURS
-07255   BOURGES
+heat map pour afiché les donée manquante
+
+par fichier et par paquet de 10
+
+et aussi affiché les pourcentage de completion d'un fichier.
