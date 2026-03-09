@@ -3,3 +3,5 @@ data/*
 *.csv.gz
 *.csv
 brouillon.md
+LSTM/*
+test.py
