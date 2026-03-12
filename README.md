@@ -78,7 +78,7 @@ https://gsienv.com/wp-content/uploads/2023/09/Textbook_Kresic_Hydrogeology-101_r
 
 https://www.math.univ-toulouse.fr/~besse/Wikistat/pdf/st-m-app-idm.pdf
 
-### Partie completion via l'ia / source 
+### Partie completion via l'ia / source
 
 https://biblio.univ-annaba.dz/ingeniorat/wp-content/uploads/2025/01/M2-ST-Memoire-HEMICI_MERABET.pdf
 https://www.fidle.cnrs.fr/w3/parcours/02-avance.html
@@ -87,3 +87,8 @@ https://youtu.be/OZ989EvTIBQ
 
 https://celene.univ-orleans.fr/pluginfile.php/1798970/mod_resource/content/1/LSTM-explication.pdf
 https://celene.univ-orleans.fr/pluginfile.php/1797464/mod_resource/content/1/CM-DLmodels_V2.pdf
+
+https://www.kaggle.com/code/dungtuan/interpolate-series-prediction-with-lstm
+https://pmc.ncbi.nlm.nih.gov/articles/PMC7571071/
+
+https://anthology-of-data.science/resources/prince2023udl.pdf
