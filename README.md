@@ -74,6 +74,11 @@ https://www.drias-climat.fr/accompagnement/sections/310
 
 https://gsienv.com/wp-content/uploads/2023/09/Textbook_Kresic_Hydrogeology-101_rev-1.pdf
 
+#### Clusterisation des nappes
+
+https://www.brgm.fr/fr/actualite/dossier-thematique/eau-souterraine-secheresse-inondations-faq-questions-frequentes
+https://www.mdpi.com/2073-4441/13/18/2535
+
 ### Complétion des données manquantes
 
 https://www.math.univ-toulouse.fr/~besse/Wikistat/pdf/st-m-app-idm.pdf
@@ -92,3 +97,4 @@ https://www.kaggle.com/code/dungtuan/interpolate-series-prediction-with-lstm
 https://pmc.ncbi.nlm.nih.gov/articles/PMC7571071/
 
 https://anthology-of-data.science/resources/prince2023udl.pdf
+
