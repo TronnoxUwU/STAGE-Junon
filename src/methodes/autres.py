@@ -3,8 +3,6 @@ import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
 
-
-
 def random_forest_delta_array(df:pd.DataFrame, valeur_de_travail:str, features:list[str]=None)->np.ndarray:
     """
     Interpole une colonne cible d’un DataFrame en utilisant un modèle 
