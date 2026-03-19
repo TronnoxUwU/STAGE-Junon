@@ -5,3 +5,4 @@ data/*
 brouillon.md
 LSTM/*
 test.py
+__pycache__/
