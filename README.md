@@ -1,4 +1,4 @@
-# PROJET - Junon : Récupération et interpolation de données
+# PROJET Junon : Récupération et interpolation de données
 
 Réalisé par Baptiste RICHARD dans le cadre du Projet Junon.
 
