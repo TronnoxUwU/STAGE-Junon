@@ -3,21 +3,25 @@ import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
 
-def random_forest_delta_array(df:pd.DataFrame, valeur_de_travail:str, features:list[str]=None)->np.ndarray:
+def random_forest_delta_array(
+    df:pd.DataFrame, 
+    valeur_de_travail:str, 
+    features:list[str]=None
+)->np.ndarray:
     """
     Interpole une colonne cible d’un DataFrame en utilisant un modèle 
     Random Forest pour prédire le taux de variation journalier et 
     reconstruire la série temporelle de manière itérative.
 
     Args:
-        df (pd.DataFrame): Dataset à compléter
+        df (DataFrame): Dataset à compléter
         valeur_de_travail (str): Valeur que l'on veut interpolé
         features (list[str], optional): Liste des colonnes à utiliser comme 
             caractéristiques pour entraîner le modèle de prédiction des deltas.
             Par défaut ['ETP_Q', 'T_Q'].
 
     Returns:
-        np.ndarray: Le dataset complété sur la valeur demandée
+        ndarray: Le dataset complété sur la valeur demandée
     """
 
     if features is None:
@@ -68,7 +72,12 @@ def random_forest_delta_array(df:pd.DataFrame, valeur_de_travail:str, features:l
 
     return y_reconstruit
 
-def knn_impute(df:pd.DataFrame, valeur_de_travail:str, k:int=5, past_only:bool=False)->np.ndarray:
+def knn_impute(
+    df:pd.DataFrame, 
+    valeur_de_travail:str, 
+    k:int=5, 
+    past_only:bool=False
+)->np.ndarray:
     """
     Impute les valeurs manquantes d'une colonne cible en utilisant la méthode
     des K plus proches voisins (KNN) avec normalisation des caractéristiques.
@@ -77,7 +86,7 @@ def knn_impute(df:pd.DataFrame, valeur_de_travail:str, k:int=5, past_only:bool=F
     (option `past_only`) pour respecter l'ordre temporel.
 
     Args:
-        df (pd.DataFrame): Dataset à compléter
+        df (DataFrame): Dataset à compléter
         valeur_de_travail (str): Valeur que l'on veut interpolé
         k (int, optional): Nombre de voisins à considérer 
             Par défaut : 5.
@@ -86,7 +95,7 @@ def knn_impute(df:pd.DataFrame, valeur_de_travail:str, k:int=5, past_only:bool=F
             Par défaut : False.
 
     Returns:
-        np.ndarray: Le dataset complété sur la valeur demandée
+        ndarray: Le dataset complété sur la valeur demandée
     """
     df = df.copy()
     
@@ -156,17 +165,20 @@ def knn_impute(df:pd.DataFrame, valeur_de_travail:str, k:int=5, past_only:bool=F
     
     return df[valeur_de_travail].to_numpy()
 
-def bootstrap_saisonnier_impute(df:pd.DataFrame, valeur_de_travail:str)->np.ndarray:
+def bootstrap_saisonnier_impute(
+    df:pd.DataFrame, 
+    valeur_de_travail:str
+)->np.ndarray:
     """
     Impute les valeurs manquantes d'une colonne temporelle en utilisant un profil 
     saisonnier basé sur la médiane historique par jour de l'année.
 
     Args:
-        df (pd.DataFrame): Dataset à compléter
+        df (DataFrame): Dataset à compléter
         valeur_de_travail (str): Valeur que l'on veut interpolé
 
     Returns:
-        np.ndarray: Le dataset complété sur la valeur demandée
+        ndarray: Le dataset complété sur la valeur demandée
     """
         
     df = df.copy()

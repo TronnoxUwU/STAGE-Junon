@@ -2,74 +2,106 @@ import numpy as np
 import pandas as pd
 
 import os
-import glob
 import joblib
 
+from typing import Optional, Tuple, List
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 
-def prepare_dataset(file, valeur_de_travail, remove_pct, rng, annee_deb = 0, annee_fin = 0):
+from keras.models import Sequential
+
+def generate_missing_data(
+    df:pd.DataFrame, 
+    file:str, 
+    valeur_de_travail:str, 
+    remove_pct:float, 
+    rng:np.random.Generator, 
+    annee_deb:int = 0, 
+    annee_fin:int = 0
+) -> Optional[Tuple[pd.DataFrame, np.ndarray, str]]:
+    """Fonction qui réalise des trous dans les données sur la valeur demandé
+
+    Args:
+        df (pd.DataFrame): Dataframe sur lequel on veut faire des troues
+        file (str): Nom du fichier
+        valeur_de_travail (str): Valeur sur laquel on veut faire des trous
+        remove_pct (float): Pourcentage de trous que l'on veut atteindre
+        rng (np.random.Generator): Generateur d'aléatoire
+        annee_deb (int, optional): Debut d'un trou. Defaults to 0.
+        annee_fin (int, optional): Fin d'un trou. Defaults to 0.
+
+    Returns:
+        Optional[Tuple[pd.DataFrame, np.ndarray, str]]: tuple composé de 
+    """    
     ds_name = os.path.basename(file)
 
-    df = pd.read_csv(file, sep=';')
-
-    if valeur_de_travail not in df.columns:
-        print(f"⚠️ {ds_name} ignoré : colonne absente.")
-        return None
-
-    df['time'] = pd.to_datetime(df['time'])
-    df = df.sort_values('time').reset_index(drop=True)
-
-    y_full = df[valeur_de_travail].to_numpy()
-
-    if np.isnan(y_full).all():
-        print(f"⚠️ {ds_name} ignoré : uniquement des NaN.")
-        return None
+    y_full = df.copy()[valeur_de_travail].to_numpy()
 
     n_points = len(df)
 
-    y = y_full.copy()
     if annee_deb != annee_fin and annee_deb < annee_fin :
         mask = (df['time'].dt.year >= annee_deb) & (df['time'].dt.year <= annee_fin)
-        y[mask] = np.nan
-
+        df.loc[mask, valeur_de_travail] = np.nan
 
     if remove_pct > 0:
         n_remove = int(n_points * remove_pct)
         remove_idx = rng.choice(n_points, size=n_remove, replace=False)
-        y[remove_idx] = np.nan
+        df.loc[remove_idx, valeur_de_travail] = np.nan
 
-    if np.count_nonzero(~np.isnan(y)) < 4:
+    if df[valeur_de_travail].notna().sum() < 4:
         print(f"⚠️ {ds_name} ignoré : pas assez de points valides.")
         return None
 
-    return df, y_full, y, ds_name
+    return df, y_full, ds_name
 
-def charger_et_preparer_donnees(dossier_path, features, scaler_path="../../scalers"):
-    # 1. Chargement global (comme tu faisais)
-    fichiers_csv = glob.glob(os.path.join(dossier_path, "*.csv"))
-    liste_df = [pd.read_csv(f, sep=';') for f in fichiers_csv]
-    df_final = pd.concat(liste_df, ignore_index=True)
-    
-    # 2. Nettoyage et Tri
-    df_final['time'] = pd.to_datetime(df_final['time'])
-    # On trie par station PUIS par temps pour que les chronologies soient respectées
-    df_final = df_final.sort_values(['code_bss', 'time'])
-    
-    df_travail = df_final.copy()
+def preparer_donnees(
+    df:pd.DataFrame, 
+    features:List[str], 
+    scaler_path:str="../../scalers",
+    scaler:MinMaxScaler = None
+) -> Tuple[pd.DataFrame, MinMaxScaler]:
+    """Normalise un DataFrame
+
+    Args:
+        df (pd.DataFrame): DataFrame que l'on veut normaliser
+        features (List[str]): features que l'on veut normaliser
+        scaler_path (str, optional): chemin ou l'on veut sauvegarder le fichier. Defaults to "../../scalers".
+        scaler(MinMaxScaler, optional): Scaler si deja existant
+
+    Returns:
+        Tuple[pd.DataFrame, MinMaxScaler]: tuple composé du dataFrame et du scaler utilisé
+    """    
     # Conversion du temps pour le scaler
-    df_travail['time_num'] = df_travail['time'].astype('int64') // 10**9
+    df['time_num'] = df['time'].astype('int64') // 10**9
     
     # On ajuste la liste des features si besoin (on utilise time_num au lieu de time)
     features_scaler = [f if f != 'time' else 'time_num' for f in features]
     
-    scaler = MinMaxScaler(feature_range=(-1, 1))
-    df_travail[features_scaler] = scaler.fit_transform(df_travail[features_scaler])
-    joblib.dump(scaler, scaler_path)
-    
-    return df_travail, scaler
+    if scaler is None :
+        scaler = MinMaxScaler(feature_range=(-1, 1))
+        df[features_scaler] = scaler.fit_transform(df[features_scaler])
+        joblib.dump(scaler, scaler_path)
+    else :
+        df[features_scaler] = scaler.transform(df[features_scaler])
 
-def creer_sequences_par_bss(df, features, window_size):
+    
+    return df, scaler
+
+def creer_sequences_par_bss(
+    df:pd.DataFrame, 
+    features:List[str], 
+    window_size:int
+) -> np.ndarray:
+    """créer des séquences de données 
+
+    Args:
+        df (pd.DataFrame): DataFrame sur lequel on va se baser
+        features (List[str]): Features
+        window_size (int): taille des séquences que l'on veut faire
+
+    Returns:
+        ndarray: liste de séquences.
+    """    
     X_list, y_list = [], []
     
     # On groupe par code_bss pour traiter chaque piézomètre séparément
@@ -85,10 +117,26 @@ def creer_sequences_par_bss(df, features, window_size):
     return np.array(X_list), np.array(y_list)
 
 
-def train_data(dossier_nappe, window_size, scaler_path="../"):
+def train_data(
+    df:pd.DataFrame, 
+    window_size:int, 
+    scaler_path:str = "../", 
+    scaler:MinMaxScaler = None
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, MinMaxScaler]:
+    """Normalise un DataFrame
+
+    Args:
+        df (pd.DataFrame): DataFrame que l'on veut normaliser
+        features (List[str]): features que l'on veut normaliser
+        scaler_path (str, optional): chemin ou l'on veut sauvegarder le fichier. Defaults to "../../scalers".
+        scaler(MinMaxScaler, optional): Scaler si deja existant
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, MinMaxScaler]: tuple composé des données pour réalisé l'entrainement de l'IA et du scaler pour les données.
+    """    
     # 1. Préparation
     features = ["niveau_nappe_eau","lon","lat","time","ETP_Q","PRELIQ_Q","T_Q","surface_imp","surface_totale"]
-    df_norm, mon_scaler = charger_et_preparer_donnees(dossier_nappe, features, scaler_path)
+    df_norm, mon_scaler = preparer_donnees(df, features, scaler_path, scaler)
 
     # 2. Création des fenêtres étanches (6 mois ici)
     features_pour_ia = [f if f != 'time' else 'time_num' for f in features]
@@ -102,8 +150,28 @@ def train_data(dossier_nappe, window_size, scaler_path="../"):
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.5, random_state=42)
     return X_train, X_val, y_train, y_val, mon_scaler
 
-def lstm_predict_array(df_entree, model, scaler, features, window_size, target_col="T_Q"):
-    df_travail = df_entree.copy()
+def lstm_predict_array(
+    df:pd.DataFrame,
+    model:Sequential, 
+    scaler:MinMaxScaler, 
+    features:List[str], 
+    window_size:int, 
+    target_col:str = "T_Q"
+) -> np.ndarray:
+    """Predit le resultat d'une valeur demander via un model
+
+    Args:
+        df (pd.DataFrame): DataFrame de travail
+        model (Sequential): Model que l'on veut utilisé
+        scaler (MinMaxScaler): Scaler pour les données
+        features (List[str]): Features pour le model
+        window_size (int): Taille des fenetres
+        target_col (str, optional): Colonne sur laquel on veut travailler. Defaults to "T_Q".
+
+    Returns:
+        np.ndarray: Colonne complété.
+    """    
+    df_travail = df.copy()
     
     # 1. Préparation du temps : On écrase 'time' par sa version numérique
     # pour que le nom de la colonne soit identique à celui vu au 'fit'
@@ -127,7 +195,7 @@ def lstm_predict_array(df_entree, model, scaler, features, window_size, target_c
     X_all = np.array(X_all, dtype='float32')
     
     if len(X_all) == 0:
-        return np.full(len(df_entree), np.nan)
+        return np.full(len(df), np.nan)
     
     # 6. Prédiction
     y_pred_norm = model.predict(X_all, verbose=0)
@@ -139,7 +207,7 @@ def lstm_predict_array(df_entree, model, scaler, features, window_size, target_c
     target_idx = features.index(target_col)
     
     # 9. Reconstruction
-    full_array = np.full(len(df_entree), np.nan)
+    full_array = np.full(len(df), np.nan)
     full_array[window_size:] = y_pred_final[:, target_idx]
     
     return full_array

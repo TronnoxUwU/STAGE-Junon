@@ -13,9 +13,9 @@ def afficher_apprentissage(history):
     plt.grid(True)
     plt.show()
 
-def affiche_prediction(df, fonction, valeur_de_travail):
+def affiche_prediction(df, prediction, valeur_de_travail):
     plt.figure(figsize=(12,6))
-    plt.plot(df['time'], fonction(df, valeur_de_travail), label="Prédiction")
+    plt.plot(df['time'], prediction, label="Prédiction")
     plt.plot(df['time'], df[valeur_de_travail], label="Mesure")
     plt.xlabel("Date")
     plt.ylabel(valeur_de_travail)
