@@ -85,9 +85,14 @@ def cnn(
         History: Historique de l'entrainement du model
     """    
     model = Sequential()
-    model.add(Conv1D(64, 3, activation="relu"))
+    model.add(Conv1D(64, 3, activation="tanh", padding="same"))
+    model.add(Conv1D(64, 3, activation="tanh", padding="same"))
+    model.add(Conv1D(64, 3, activation="tanh", padding="same"))
     model.add(MaxPooling1D(2))
     model.add(LSTM(128))
+    model.add(Dropout(0.3))
+    model.add(Dense(64, activation="tanh"))
+    model.add(Dense(12, activation="tanh"))
     model.add(Dense(X_train.shape[2])) 
 
     model.compile(optimizer='adam', loss=masked_mse)
@@ -118,12 +123,14 @@ def lstm(
         History: Historique de l'entrainement du model
     """    
     model = Sequential()
-    model.add(LSTM(64, input_shape=(X_train.shape[1], X_train.shape[2]), return_sequences=True))
-    model.add(Dropout(0.2))
+    model.add(Dense(12, activation="tanh"))
+    model.add(Dense(32, activation="tanh"))
+    model.add(LSTM(64, return_sequences=True))
+    model.add(Dropout(0.3))
     model.add(LSTM(32))
     model.add(Dropout(0.2))
-    model.add(Dense(12, activation="relu"))
-    model.add(Dense(12, activation="relu"))
+    model.add(Dense(12, activation="tanh"))
+    model.add(Dense(12, activation="tanh"))
     model.add(Dense(X_train.shape[2])) 
 
     model.compile(optimizer='adam', loss=masked_mse)
@@ -154,10 +161,14 @@ def bilstm(
         History: Historique de l'entrainement du model
     """    
     model = Sequential()
+    model.add(Dense(12, activation="tanh"))
+    model.add(Dense(32, activation="tanh"))
     model.add(Bidirectional(LSTM(64, return_sequences=True)))
     model.add(Dropout(0.2))
     model.add(LSTM(32))
     model.add(Dropout(0.2))
+    model.add(Dense(32, activation="tanh"))
+    model.add(Dense(12, activation="tanh"))
     model.add(Dense(X_train.shape[2])) 
 
     model.compile(optimizer='adam', loss=masked_mse)

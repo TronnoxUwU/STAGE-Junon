@@ -90,7 +90,8 @@ def preparer_donnees(
 def creer_sequences_par_bss(
     df:pd.DataFrame, 
     features:List[str], 
-    window_size:int
+    window_size:int,
+    croissant:bool=True
 ) -> np.ndarray:
     """créer des séquences de données 
 
@@ -98,6 +99,7 @@ def creer_sequences_par_bss(
         df (pd.DataFrame): DataFrame sur lequel on va se baser
         features (List[str]): Features
         window_size (int): taille des séquences que l'on veut faire
+        croissant (bool, optional): True si dans l'ordre croissant
 
     Returns:
         ndarray: liste de séquences.
@@ -106,6 +108,7 @@ def creer_sequences_par_bss(
     
     # On groupe par code_bss pour traiter chaque piézomètre séparément
     for _, group in df.groupby('code_bss'):
+        group = group.sort_values(by='time_num', ascending=croissant)
         data = group[features].values
         
         # On ne crée des fenêtres que si la station a assez de données
@@ -121,7 +124,8 @@ def train_data(
     df:pd.DataFrame, 
     window_size:int, 
     scaler_path:str = "../", 
-    scaler:MinMaxScaler = None
+    scaler:MinMaxScaler = None,
+    croissant:bool = True
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, MinMaxScaler]:
     """Normalise un DataFrame
 
@@ -130,6 +134,7 @@ def train_data(
         features (List[str]): features que l'on veut normaliser
         scaler_path (str, optional): chemin ou l'on veut sauvegarder le fichier. Defaults to "../../scalers".
         scaler(MinMaxScaler, optional): Scaler si deja existant
+        croissant (bool, optional): True si dans l'ordre croissant
 
     Returns:
         Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, MinMaxScaler]: tuple composé des données pour réalisé l'entrainement de l'IA et du scaler pour les données.
@@ -140,7 +145,7 @@ def train_data(
 
     # 2. Création des fenêtres étanches (6 mois ici)
     features_pour_ia = [f if f != 'time' else 'time_num' for f in features]
-    X, y = creer_sequences_par_bss(df_norm, features_pour_ia, window_size=window_size)
+    X, y = creer_sequences_par_bss(df_norm, features_pour_ia, window_size=window_size, croissant=croissant)
 
     # 3. Gestion des NaN pour la Masked Loss
     X = np.nan_to_num(X, nan=-999.0)
