@@ -1,6 +1,7 @@
 import pandas as pd
 
 import os
+os.environ["KERAS_BACKEND"] = "torch"
 import glob
 
 def charger_fichier(

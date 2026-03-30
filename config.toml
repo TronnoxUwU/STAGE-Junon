@@ -1,0 +1,34 @@
+[dossier]
+dossier_extraction = "data/extraction/"
+dossier_extraction_tmp = "data/extraction/tmp"
+
+meteo_name_extraction = "meteo"
+nappe_name_extraction = "nappes"
+etp_name_extraction = "etp"
+impermeabilite_name_extraction = "impermeabilite"
+mailles_name_extraction = "impermeabilite"
+communes_name_extraction = "impermeabilite"
+
+dossier_nappe_fusion = "data/fusion"
+
+dossier_nappe_inertielle = "data/clusterisation/inertielle"
+dossier_nappe_reactive = "data/clusterisation/reactive"
+
+model_folder = "data"
+scaler_folder = ""
+
+output_folder = "../../data/fusion"
+
+[entrainement_model]
+global = false
+fine_tune = false
+local = false
+
+[pipeline]
+departements = [45] # liste des departements avec lesquels on veut travailler
+qualite = 30 # nombre d'année de donné que possède châque dataset. valeur : 30, 20, 10, 5, 0
+type = "reactive" # type de nappe sur lequel on veut travailler. valeur : "", "reactive" ou "inertielle"
+extraction = false
+fusion = false
+clusterisation = false
+completion = false
