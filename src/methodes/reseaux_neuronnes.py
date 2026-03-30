@@ -1,11 +1,16 @@
 import os
 os.environ["KERAS_BACKEND"] = "torch"
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 from keras.models import Sequential
 from keras.layers import Dense, LSTM, Bidirectional, Dropout, Conv1D, MaxPooling1D
 from keras.callbacks import EarlyStopping, History
 import torch
 import keras
 from numpy import ndarray
+
+from keras.optimizers import Adam
+from keras.regularizers import l2
+
 
 @keras.saving.register_keras_serializable()
 def masked_mse(
@@ -54,16 +59,155 @@ def fit(
     """    
     if callback is None :
         callback = EarlyStopping(monitor='val_loss',
-                                patience=3,
-                                restore_best_weights=True)
+                                 patience=1,
+                                 restore_best_weights=True)
     return model.fit(
         X_train, y_train, 
-        epochs=50, 
+        epochs=1, 
         batch_size=32, 
         validation_data=(X_val, y_val),
         callbacks=[callback],
         verbose=1
     )
+
+def lstm_model(
+    input_shape,
+    learning_rate,
+    weight_decay,
+    n_units,
+    dropout,
+):
+    model = Sequential()
+    
+    model.add(keras.layers.Input(shape=(input_shape.shape[1], input_shape.shape[2])))
+    model.add(Dense(n_units, 
+                    activation="tanh",
+                    kernel_regularizer=l2(weight_decay)))
+    model.add(Dense(n_units*2, 
+                    activation="tanh",
+                    kernel_regularizer=l2(weight_decay)))
+    
+    model.add(LSTM(n_units, return_sequences=True))
+    model.add(Dropout(dropout))
+    
+    model.add(LSTM(n_units//2))
+    model.add(Dropout(dropout))
+    
+    model.add(Dense(n_units, activation="tanh"))
+    model.add(Dense(input_shape.shape[2]))
+
+    optimizer = Adam(learning_rate=learning_rate)
+    
+    model.compile(optimizer=optimizer, loss=masked_mse)
+    
+    return model
+
+def cnn_model(
+    input_shape,
+    learning_rate,
+    weight_decay,
+    n_units,
+    dropout,
+    kernel_s = 3
+):
+    model = Sequential()
+    
+    model.add(keras.layers.Input(shape=(input_shape.shape[1], input_shape.shape[2])))
+    model.add(Conv1D(
+        n_units, kernel_s,
+        activation="tanh",
+        padding="same",
+        kernel_regularizer=l2(weight_decay)
+    ))
+    model.add(Conv1D(
+        n_units, kernel_s,
+        activation="tanh",
+        padding="same",
+        kernel_regularizer=l2(weight_decay)
+    ))
+    model.add(Conv1D(
+        n_units, kernel_s,
+        activation="tanh",
+        padding="same",
+        kernel_regularizer=l2(weight_decay)
+    ))
+    
+    model.add(MaxPooling1D(2))
+    model.add(LSTM(128))
+    model.add(Dropout(0.3))
+
+    model.add(Dense(
+        n_units,
+        activation="tanh",
+        kernel_regularizer=l2(weight_decay)
+    ))
+    model.add(Dense(
+        n_units // 2,
+        activation="tanh",
+        kernel_regularizer=l2(weight_decay)
+    ))
+    
+    model.add(Dense(input_shape.shape[2]))
+    
+    optimizer = Adam(learning_rate=learning_rate)
+    
+    model.compile(
+        optimizer=optimizer,
+        loss=masked_mse
+    )
+    
+    return model
+
+def bilstm_model(
+    input_shape,
+    learning_rate,
+    weight_decay,
+    n_units,
+    dropout,
+):
+    model = Sequential()
+    
+    model.add(keras.layers.Input(shape=(input_shape.shape[1], input_shape.shape[2])))
+    model.add(Dense(
+        n_units,
+        activation="tanh",
+        kernel_regularizer=l2(weight_decay)
+    ))
+    model.add(Dense(
+        n_units * 2,
+        activation="tanh",
+        kernel_regularizer=l2(weight_decay)
+    ))
+    
+    model.add(Bidirectional(
+        LSTM(n_units, return_sequences=True)
+    ))
+    model.add(Dropout(dropout))
+    
+    model.add(LSTM(n_units // 2))
+    model.add(Dropout(dropout))
+    
+    model.add(Dense(
+        n_units,
+        activation="tanh",
+        kernel_regularizer=l2(weight_decay)
+    ))
+    model.add(Dense(
+        n_units // 2,
+        activation="tanh",
+        kernel_regularizer=l2(weight_decay)
+    ))
+    
+    model.add(Dense(input_shape.shape[2]))
+    
+    optimizer = Adam(learning_rate=learning_rate)
+    
+    model.compile(
+        optimizer=optimizer,
+        loss=masked_mse
+    )
+    
+    return model
 
 def cnn(
     X_train:ndarray,
@@ -128,7 +272,7 @@ def lstm(
     model.add(LSTM(64, return_sequences=True))
     model.add(Dropout(0.3))
     model.add(LSTM(32))
-    model.add(Dropout(0.2))
+    model.add(Dropout(0.3))
     model.add(Dense(12, activation="tanh"))
     model.add(Dense(12, activation="tanh"))
     model.add(Dense(X_train.shape[2])) 
@@ -164,9 +308,9 @@ def bilstm(
     model.add(Dense(12, activation="tanh"))
     model.add(Dense(32, activation="tanh"))
     model.add(Bidirectional(LSTM(64, return_sequences=True)))
-    model.add(Dropout(0.2))
+    model.add(Dropout(0.3))
     model.add(LSTM(32))
-    model.add(Dropout(0.2))
+    model.add(Dropout(0.3))
     model.add(Dense(32, activation="tanh"))
     model.add(Dense(12, activation="tanh"))
     model.add(Dense(X_train.shape[2])) 

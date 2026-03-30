@@ -125,7 +125,8 @@ def train_data(
     window_size:int, 
     scaler_path:str = "../", 
     scaler:MinMaxScaler = None,
-    croissant:bool = True
+    croissant:bool = True,
+    saine:bool = False,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, MinMaxScaler]:
     """Normalise un DataFrame
 
@@ -135,6 +136,7 @@ def train_data(
         scaler_path (str, optional): chemin ou l'on veut sauvegarder le fichier. Defaults to "../../scalers".
         scaler(MinMaxScaler, optional): Scaler si deja existant
         croissant (bool, optional): True si dans l'ordre croissant
+        saine (bool, optional): False si les données que l'on veut faire soit a partir de données non saine
 
     Returns:
         Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, MinMaxScaler]: tuple composé des données pour réalisé l'entrainement de l'IA et du scaler pour les données.
@@ -142,6 +144,9 @@ def train_data(
     # 1. Préparation
     features = ["niveau_nappe_eau","lon","lat","time","ETP_Q","PRELIQ_Q","T_Q","surface_imp","surface_totale"]
     df_norm, mon_scaler = preparer_donnees(df, features, scaler_path, scaler)
+
+    if saine :
+        df_norm.dropna()
 
     # 2. Création des fenêtres étanches (6 mois ici)
     features_pour_ia = [f if f != 'time' else 'time_num' for f in features]

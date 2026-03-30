@@ -1,6 +1,9 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.lines import Line2D
+import os 
+import glob
+import pandas as pd
 
 def afficher_apprentissage(history):
     plt.figure(figsize=(10, 5))
@@ -282,3 +285,30 @@ def plot_mean_errors_by_method(error_df, processed_count, valeur_de_travail):
 
     plt.grid(True, linestyle='--', alpha=0.4)
     plt.show()
+
+def plot_nappes(dossier, valeur_de_travail="niveau_nappe_eau"):
+    fichiers = glob.glob(os.path.join(dossier, "*.csv"))
+
+    for fichier in fichiers:
+        try:
+            df = pd.read_csv(fichier, sep=";")
+
+            # Conversion du temps
+            df['time'] = pd.to_datetime(df['time'])
+            df = df.sort_values('time')
+
+            # Conversion de la valeur
+            df[valeur_de_travail] = pd.to_numeric(df[valeur_de_travail], errors='coerce')
+
+            # Plot
+            plt.figure(figsize=(10,5))
+            plt.plot(df['time'], df[valeur_de_travail])
+            plt.title(f"Nappe : {os.path.basename(fichier)}")
+            plt.xlabel("Temps")
+            plt.ylabel(valeur_de_travail)
+            plt.grid(True)
+
+            plt.show()
+
+        except Exception as e:
+            print(f"Erreur avec {fichier} : {e}")
