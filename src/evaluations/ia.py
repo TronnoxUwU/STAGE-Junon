@@ -6,7 +6,7 @@ import gc
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import torch
-from src.methodes import cnn_model, lstm_model, bilstm_model, fit
+from methodes import cnn_model, lstm_model, bilstm_model, fit
 
 # ─────────────────────────────────────────────
 #  Hyperparamètres à explorer

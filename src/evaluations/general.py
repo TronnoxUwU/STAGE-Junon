@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 import os
 os.environ["KERAS_BACKEND"] = "torch"
-from src.methodes import *
-from src.data import *
+from methodes import *
+from data import *
 from keras.models import load_model
 from sklearn.preprocessing import MinMaxScaler
 from typing import Dict

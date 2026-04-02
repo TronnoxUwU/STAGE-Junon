@@ -18,7 +18,7 @@ def fetch_dataset_resources(dataset_id:str):
     return resp.json().get("resources", [])
 
 
-def download_files(resources, dest_folder, formats=("csv",)):
+def download_files(resources, dest_folder, formats=("csv",), filename=None):
     files = []
 
     for r in resources:
@@ -26,16 +26,22 @@ def download_files(resources, dest_folder, formats=("csv",)):
         fmt = r.get("format", "").lower()
 
         if fmt in formats:
-            filename = os.path.join(dest_folder, url.split("/")[-1])
+            # Si un nom est fourni → on l'utilise, sinon nom original
+            if filename:
+                final_name = filename
+            else:
+                final_name = url.split("/")[-1]
+
+            filepath = os.path.join(dest_folder, final_name)
 
             print(f"[DOWNLOAD] {url}")
             resp = requests.get(url)
             resp.raise_for_status()
 
-            with open(filename, "wb") as f:
+            with open(filepath, "wb") as f:
                 f.write(resp.content)
 
-            files.append(filename)
+            files.append(filepath)
 
     return files
 
@@ -202,8 +208,8 @@ def process_meteo(dataset_id, tmp_folder, output_folder, name, departements):
 
     print(f"✔ {name} : {len(df)} lignes")
 
-def process_nappe(tmp_folder, output_folder, name, departements):
-    folder = f"{tmp_folder}/{name}"
+def process_nappe(output_folder, name, departements):
+    folder = f"{output_folder}/{name}"
     ensure_dir(folder)
 
     url_stations = "https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/stations"
@@ -270,11 +276,7 @@ def process_nappe(tmp_folder, output_folder, name, departements):
     print(f"✔ {name} : {len(codes)} lignes")
 
 
-def download_communes_csv(dest_folder: str):
-    """
-    Télécharge le fichier communesdefrancev2.csv du dataset 'Données sur les communes de France Métropolitaine'
-    et retourne le chemin local du fichier.
-    """
+def download_communes_csv(dest_folder: str, name:str = "communes"):
     ensure_dir(dest_folder)
 
     # Identifiant du dataset (dataset id sur data.gouv.fr)
@@ -284,9 +286,9 @@ def download_communes_csv(dest_folder: str):
     resources = fetch_dataset_resources(dataset_id)
 
     # Télécharger uniquement les fichiers CSV
-    download_files(resources, dest_folder, formats=("csv",))
+    download_files(resources, dest_folder, formats=("csv",), filename=f"{name}.csv")
 
-def download_maille_csv(folder:str):
+def download_maille_csv(folder:str, name:str = "maille"):
     url = "https://donneespubliques.meteofrance.fr/client/document/metadonnees_swi_276.csv"
     print(f"[DOWNLOAD] {url}")
     df = pd.read_csv(url, sep=";", skiprows=4)
@@ -294,7 +296,7 @@ def download_maille_csv(folder:str):
     df.columns = df.columns.str.replace("#", "").str.strip()
 
     # Sauvegarde propre
-    df.to_csv(f"{folder}/maille.csv", sep=";", index=False)
+    df.to_csv(f"{folder}/{name}.csv", sep=";", index=False)
 
 
 if __name__ == "__main__":
@@ -310,11 +312,14 @@ if __name__ == "__main__":
     etp_name = "etp"
     impermeabilite_name = "impermeabilite"
 
+    download_communes_csv("./data")
+    download_maille_csv("./data")
+
     process_impermeabilite(
         dataset_id="697b4f4ceea77fb452ba9d6d",
         tmp_folder=tmp_folder,
         output_folder=output_folder,
-        communes_file="data/communesdefrancev2.csv",
+        communes_file="data/communes.csv",
         name=impermeabilite_name,
         departements=[45]
     )
@@ -336,11 +341,7 @@ if __name__ == "__main__":
     )
 
     process_nappe(
-        tmp_folder=tmp_folder,
         output_folder=output_folder,
         name=nappe_name,
         departements=[45]
     )
-
-    download_communes_csv("./data")
-    download_maille_csv("./data")

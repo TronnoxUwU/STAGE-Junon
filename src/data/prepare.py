@@ -157,7 +157,7 @@ def train_data(
     y = np.nan_to_num(y, nan=-999.0)
 
     # 4. Split Train/Val
-    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.5, random_state=42)
+    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.8, random_state=42)
     return X_train, X_val, y_train, y_val, mon_scaler
 
 def lstm_predict_array(
