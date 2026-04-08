@@ -13,9 +13,6 @@ import tomllib
 
 import shutil
 
-def chargement_config():
-    pass
-
 def extraction(output_folder, tmp_folder, departements, names):
     download_communes_csv(output_folder, names["communes_name_extraction"])
     download_maille_csv(output_folder, names["mailles_name_extraction"])
@@ -92,15 +89,27 @@ def clusterisations(input_folder, dossier_nappe_inertielle, dossier_nappe_reacti
             df.to_csv(os.path.join(dossier_nappe_inertielle, nom.split("\\")[1]), sep=";", index=False)
 
 
-def methodes_completion(input_folder, ouput_folder, travail, cluster, remove_pct, troue_deb, troue_fin, summary=None):
+def methodes_completion(input_folder, ouput_folder, travail, cluster, dossier_model, fichier_scaler, window_size, remove_pct, troue_deb, troue_fin, summary=None):
+    model = {}
+    features = ["niveau_nappe_eau","lon","lat","time_num","ETP_Q","PRELIQ_Q","T_Q","surface_imp","surface_totale"]
+    for valeur_de_travail, methodes in travail.items():
+        model[valeur_de_travail] = {}
+        for m in methodes["methodes"]:
+            if "/" in m:
+                model[valeur_de_travail][m] = load_model(f"{dossier_model}/{m}.keras", custom_objects={'masked_mse': masked_mse})
+
+    mon_scaler = joblib.load(f"{fichier_scaler}/scaler.save")
 
     os.makedirs(ouput_folder, exist_ok=True)
     
     if summary is None :
-        summary = pd.DataFrame(columns=["code_bss","lat","lon","cluster"])
+        summary = []
 
     for file in liste_fichiers(input_folder):
         df = charger_fichier(file)
+        df['time_num'] = df['time'].astype('int64') // 10**9
+
+        df.sort_values(by='time_num', ascending=False)
 
         ligne = {
             "code_bss": df["code_bss"].iloc[0],
@@ -112,7 +121,7 @@ def methodes_completion(input_folder, ouput_folder, travail, cluster, remove_pct
         for valeur_de_travail, methodes in travail.items():
             if methodes["methodes"] == [] or not methodes["realiser"]:
                 continue
-            
+
             df_error = df.copy()
 
             res = generate_missing_data(df_error, file, valeur_de_travail, remove_pct, np.random.default_rng(), troue_deb, troue_fin)
@@ -143,23 +152,46 @@ def methodes_completion(input_folder, ouput_folder, travail, cluster, remove_pct
             if "akima" in methodes["methodes"]:
                 result["vrai"]["akima"] = interpolation_akima_array(df, valeur_de_travail)
                 result["erreur"]["akima"] = interpolation_akima_array(df_error, valeur_de_travail)
+            if "rf" in methodes["methodes"]:
+                result["vrai"]["rf"] = random_forest_delta_array(df, valeur_de_travail)
+                result["erreur"]["rf"] = random_forest_delta_array(df_error, valeur_de_travail)
+            if "knn" in methodes["methodes"]:
+                result["vrai"]["knn"] = knn_impute(df, valeur_de_travail)
+                result["erreur"]["knn"] = knn_impute(df_error, valeur_de_travail)
+            if "bss" in methodes["methodes"]:
+                result["vrai"]["bss"] = bootstrap_saisonnier_impute(df, valeur_de_travail)
+                result["erreur"]["bss"] = bootstrap_saisonnier_impute(df_error, valeur_de_travail)
+            if model[valeur_de_travail] != {} or not window_size<=len(df):
+                
+                for name, m in model[valeur_de_travail].items():
+                    result["vrai"][name] = lstm_predict_array(df, m, mon_scaler, features, window_size=window_size, target_col=valeur_de_travail)
+                    result["erreur"][name] = lstm_predict_array(df_error, m, mon_scaler, features, window_size=window_size, target_col=valeur_de_travail)
 
             for m, res in result["erreur"].items():
-                ligne[f"{m}_{valeur_de_travail}"] = nrmse(y_full,res)
+                ligne[f"{m}_{valeur_de_travail}"] = nrmse(res, y_full)
 
                 df[f"{m}_{valeur_de_travail}"] = result["vrai"][m]
 
-            summary.loc[len(summary)] = ligne
+            summary.append(ligne)
         output_file = df["code_bss"].iloc[0].replace("/", "_")   # supposé unique par fichier
         output_file = f"data_{output_file}.csv"
         df.to_csv(f"{ouput_folder}/{output_file}", sep=";", index=False)
     return summary
 
+def entrainement_création_NNs(dossier_nappe, window_size, fichier_scaler, dossier_model, models):
+    os.makedirs(dossier_model, exist_ok=True)
+    if os.path.exists(f"{fichier_scaler}/scaler.save"):
+        scaler =  joblib.load(f"{fichier_scaler}/scaler.save")
+    else :
+        scaler = None
+    X_train, X_val, y_train, y_val, scaler = train_data(charger_dossier(dossier_nappe), window_size, fichier_scaler, scaler, croissant=False)
 
-
-
-def entrainement_création_NNs():
-    pass
+    if "CNN" in models:
+        cnn(X_train, y_train, X_val, y_val, dossier_model)
+    if "LSTM" in models:
+        lstm(X_train, y_train, X_val, y_val, dossier_model)
+    if "BILSTM" in models:
+        bilstm(X_train, y_train, X_val, y_val, dossier_model)
 
 def load_config(path):
     print(f"[CHARGEMENT] {path}")
@@ -202,28 +234,60 @@ if __name__ == "__main__":
             config["dossier"]["dossier_nappe_reactive"]
         )
 
+    if config["pipeline"]["entrainement"]:
+        if config["entrainement_model"]["global"]:
+            entrainement_création_NNs(config["dossier"]["dossier_fusion"], 
+                                      config["entrainement_model"]["window_size"], 
+                                      config["dossier"]["dossier_scaler"], 
+                                      f"{config["dossier"]["dossier_model"]}/global/", 
+                                      config["entrainement_model"]["models"])
+        
+        if config["entrainement_model"]["fine_tune"]:
+            entrainement_création_NNs(config["dossier"]["dossier_nappe_inertielle"], 
+                                      config["entrainement_model"]["window_size"], 
+                                      config["dossier"]["dossier_scaler"], 
+                                      f"{config["dossier"]["dossier_model"]}/inertielle/", 
+                                      config["entrainement_model"]["models"])
+            
+            entrainement_création_NNs(config["dossier"]["dossier_nappe_reactive"], 
+                                      config["entrainement_model"]["window_size"], 
+                                      config["dossier"]["dossier_scaler"], 
+                                      f"{config["dossier"]["dossier_model"]}/reactive/", 
+                                      config["entrainement_model"]["models"])
+
+
     if config["pipeline"]["completion"]:
         dossiers = []
         print("="*100)
         print("Complétion des données")
         print("="*100)
-        match config["pipeline"]["type"]:
-            case "reactive":
-                dossiers.append(config["dossier"]["dossier_nappe_reactive"])
-            case "inertielle":
-                dossiers.append(config["dossier"]["dossier_nappe_inertielle"])
-            case _ :
-                dossiers.append(config["dossier"]["dossier_nappe_reactive"])
-                dossiers.append(config["dossier"]["dossier_nappe_inertielle"])
+        if "reactive" in config["pipeline"]["type"]:
+            dossiers.append((config["dossier"]["dossier_nappe_reactive"],
+                                config["dossier"]["dossier_completion_reactive"],
+                                "reactive"))
+        if "inertielle" in config["pipeline"]["type"]:
+            dossiers.append((config["dossier"]["dossier_nappe_inertielle"],
+                                config["dossier"]["dossier_completion_inertielle"],
+                                "inertielle"))
+        if config["pipeline"]["type"] == [] :
+            dossiers.append((config["dossier"]["dossier_fusion"],
+                                config["dossier"]["dossier_completion"],
+                                ""))
 
         summary = None
-        for dossier in dossiers:
+        for input,ouput,type in dossiers:
             summary = methodes_completion(
-                dossier,
-                config["dossier"]["dossier_completion"],
+                input,
+                ouput,
                 config["completion"],
-                config["pipeline"]["type"],
+                type,
+                config["dossier"]["dossier_model"],
+                config["dossier"]["dossier_scaler"],
+                config["entrainement_model"]["window_size"],
                 0.1,
                 1990,1990,
                 summary
             )
+        pd.DataFrame(summary).to_csv(f"{config["dossier"]["dossier_summary"]}/{config["dossier"]["summary_name"]}", sep=";", index=False)
+
+        

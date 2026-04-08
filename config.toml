@@ -16,13 +16,20 @@ dossier_nappe_inertielle = "data/clusterisation/inertielle"
 dossier_nappe_reactive = "data/clusterisation/reactive"
 
 dossier_completion = "data/completion"
+dossier_completion_inertielle = "data/completion/inertielle"
+dossier_completion_reactive = "data/completion/reactive"
 
-model_folder = ""
-scaler_folder = ""
+dossier_summary = "data"
+summary_name = "summary.csv"
+
+dossier_model = "models"
+dossier_scaler = "scaler"
 
 [entrainement_model]
-global = false
-fine_tune = false
+window_size = 120
+models = ["CNN","LSTM","BILSTM"] # valeur : ["CNN","LSTM","BILSTM"]
+global = true
+fine_tune = true
 local = false
 
 [completion]
@@ -32,7 +39,7 @@ methodes = ["polynome"]
 
 [completion.PRELIQ_Q]
 realiser = true
-methodes = ["lineaire","cubique"]
+methodes = ["lineaire","cubique", "global/CNN"]
 
 [completion.T_Q]
 methodes = []
@@ -47,9 +54,10 @@ methodes = []
 departements = [45] # liste des departements avec lesquels on veut travailler
 qualite = 30 # nombre d'année de donné que possède châque dataset. valeur : 30, 20, 10, 5, 0
 
-type = "reactive" # type de nappe sur lequel on veut travailler. valeur : "", "reactive" ou "inertielle"
+type = [] # type de nappe sur lequel on veut travailler. valeur : "reactive", "inertielle"  ou []
 
 extraction = false
 fusion = false
 clusterisation = false
+entrainement = false
 completion = true

@@ -243,7 +243,7 @@ def cnn(
 
     history = fit(model, X_train, y_train, X_val, y_val)
 
-    model.save(dossier_model + "./CNN.keras")
+    model.save(dossier_model + "CNN.keras")
 
     return history
 

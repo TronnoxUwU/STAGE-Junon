@@ -218,6 +218,7 @@ def lstm_predict_array(
     
     # 9. Reconstruction
     full_array = np.full(len(df), np.nan)
+    full_array[:window_size] = y_pred_final[:, target_idx]
     full_array[window_size:] = y_pred_final[:, target_idx]
     
     return full_array
