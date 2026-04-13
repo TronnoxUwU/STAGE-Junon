@@ -175,7 +175,7 @@ def methodes_completion(input_folder, ouput_folder, travail, cluster, dossier_mo
             summary.append(ligne)
         output_file = df["code_bss"].iloc[0].replace("/", "_")   # supposé unique par fichier
         output_file = f"data_{output_file}.csv"
-        df.to_csv(f"{ouput_folder}/{output_file}", sep=";", index=False)
+        df.to_csv(f"{ouput_folder}/{output_file}", sep=";", index=False) 
     return summary
 
 def entrainement_création_NNs(dossier_nappe, window_size, fichier_scaler, dossier_model, models):

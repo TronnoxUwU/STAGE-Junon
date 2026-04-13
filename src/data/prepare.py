@@ -54,6 +54,64 @@ def generate_missing_data(
 
     return df, y_full, ds_name
 
+def generate_missing_data_NN(
+    df:pd.DataFrame, 
+    valeur_de_travail:str, 
+    remove_pct:float,
+    rng:np.random.Generator,
+    taille:tuple[int]=(1,1),  
+) -> Optional[Tuple[pd.DataFrame, np.ndarray, str]]:
+    """Fonction qui réalise des trous dans les données sur la valeur demandé
+
+    Args:
+        df (pd.DataFrame): Dataframe sur lequel on veut faire des troues
+        file (str): Nom du fichier
+        valeur_de_travail (str): Valeur sur laquel on veut faire des trous
+        remove_pct (float): Pourcentage de trous que l'on veut atteindre
+        rng (np.random.Generator): Generateur d'aléatoire
+        annee_deb (int, optional): Debut d'un trou. Defaults to 0.
+        annee_fin (int, optional): Fin d'un trou. Defaults to 0.
+
+    Returns:
+        Optional[Tuple[pd.DataFrame, np.ndarray, str]]: tuple composé de 
+    """    
+
+    df = df.copy()
+    y_full = df[valeur_de_travail].to_numpy()
+
+    n_points = len(df)
+    n_remove_target = int(n_points * remove_pct)
+    
+    removed = 0
+    removed_indices = set()
+
+    while removed < n_remove_target:
+        # 1. choisir une taille de trou
+        hole_size = rng.integers(taille[0], taille[1] + 1)
+
+        # 2. choisir un point de départ valide
+        start = rng.integers(0, n_points - hole_size + 1)
+
+        # 3. indices du trou
+        indices = range(start, start + hole_size)
+
+        # éviter de supprimer deux fois les mêmes points
+        new_indices = [i for i in indices if i not in removed_indices]
+
+        if not new_indices:
+            continue
+
+        # 4. appliquer suppression
+        df.iloc[new_indices, df.columns.get_loc(valeur_de_travail)] = -1
+
+        removed_indices.update(new_indices)
+        removed += len(new_indices)
+
+    if df[valeur_de_travail].notna().sum() < 4:
+        return None
+
+    return df, y_full
+
 def preparer_donnees(
     df:pd.DataFrame, 
     features:List[str], 
@@ -119,6 +177,59 @@ def creer_sequences_par_bss(
     
     return np.array(X_list), np.array(y_list)
 
+def creer_sequences_par_bss_cnn(
+    df:pd.DataFrame, 
+    features:List[str], 
+    window_size:int,
+    rng: np.random.Generator,
+    remove_pct: float = 0.1,
+    taille: tuple[int, int] = (1, 5),
+    croissant: bool = True
+) -> np.ndarray:
+    """créer des séquences de données 
+
+    Args:
+        df (pd.DataFrame): DataFrame sur lequel on va se baser
+        features (List[str]): Features
+        window_size (int): taille des séquences que l'on veut faire
+        croissant (bool, optional): True si dans l'ordre croissant
+
+    Returns:
+        Tuple[ndarray]: liste de séquences.
+    """    
+    X_list, y_list = [], []
+
+    for _, group in df.groupby('code_bss'):
+        group = group.sort_values(by='time_num', ascending=croissant).copy()
+
+        # 🔹 On garde une version complète pour y
+        group_full = group.copy()
+
+        # 🔹 On applique les trous sur UNE feature (ou plusieurs si tu veux)
+        for feature in features:
+            result = generate_missing_data_NN(
+                group,
+                valeur_de_travail=feature,
+                remove_pct=remove_pct,
+                rng=rng,
+                taille=taille
+            )
+            if result is None:
+                continue
+            group, _ = result
+
+        data_with_holes = group[features].values
+        data_full = group_full[features].values
+
+        if len(data_with_holes) > window_size + 1:
+            for i in range(window_size, len(data_with_holes)):
+                # X = données avec trous
+                X_list.append(data_with_holes[i-window_size:i, :])
+                
+                # y = données complètes (vérité terrain)
+                y_list.append(data_full[i-window_size:i, :])
+
+    return np.array(X_list), np.array(y_list)
 
 def train_data(
     df:pd.DataFrame, 
@@ -141,12 +252,14 @@ def train_data(
     Returns:
         Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, MinMaxScaler]: tuple composé des données pour réalisé l'entrainement de l'IA et du scaler pour les données.
     """    
+
+    if saine :
+        df_norm.dropna()
+    
     # 1. Préparation
     features = ["niveau_nappe_eau","lon","lat","time","ETP_Q","PRELIQ_Q","T_Q","surface_imp","surface_totale"]
     df_norm, mon_scaler = preparer_donnees(df, features, scaler_path, scaler)
 
-    if saine :
-        df_norm.dropna()
 
     # 2. Création des fenêtres étanches (6 mois ici)
     features_pour_ia = [f if f != 'time' else 'time_num' for f in features]
@@ -155,6 +268,45 @@ def train_data(
     # 3. Gestion des NaN pour la Masked Loss
     X = np.nan_to_num(X, nan=-999.0)
     y = np.nan_to_num(y, nan=-999.0)
+
+    # 4. Split Train/Val
+    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.8, random_state=42)
+    return X_train, X_val, y_train, y_val, mon_scaler
+
+def train_data_cnn(
+    df:pd.DataFrame, 
+    window_size:int, 
+    scaler_path:str = "../", 
+    scaler:MinMaxScaler = None,
+    croissant:bool = True,
+    saine:bool = False,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, MinMaxScaler]:
+    """Normalise un DataFrame
+
+    Args:
+        df (pd.DataFrame): DataFrame que l'on veut normaliser
+        features (List[str]): features que l'on veut normaliser
+        scaler_path (str, optional): chemin ou l'on veut sauvegarder le fichier. Defaults to "../../scalers".
+        scaler(MinMaxScaler, optional): Scaler si deja existant
+        croissant (bool, optional): True si dans l'ordre croissant
+        saine (bool, optional): False si les données que l'on veut faire soit a partir de données non saine
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, MinMaxScaler]: tuple composé des données pour réalisé l'entrainement de l'IA et du scaler pour les données.
+    """    
+    # 1. Préparation
+    if saine :
+        df = df.dropna()
+        
+
+    features = ["niveau_nappe_eau","lon","lat","time","ETP_Q","PRELIQ_Q","T_Q","surface_imp","surface_totale"]
+    df_norm, mon_scaler = preparer_donnees(df, features, scaler_path, scaler)
+
+    df_norm = df_norm.fillna(-1)
+
+    # 2. Création des fenêtres étanches (6 mois ici)
+    features_pour_ia = [f if f != 'time' else 'time_num' for f in features]
+    X, y = creer_sequences_par_bss_cnn(df_norm, features_pour_ia, window_size=window_size, rng=np.random.default_rng(42), croissant=croissant)
 
     # 4. Split Train/Val
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.8, random_state=42)
@@ -196,7 +348,7 @@ def lstm_predict_array(
     values_norm = scaler.transform(df_pour_scaler)
     
     # 4. Gestion des NaN pour le modèle
-    values_masked = np.nan_to_num(values_norm, nan=-999.0)
+    values_masked = np.nan_to_num(values_norm, nan=-1)
     
     # 5. Création des séquences
     X_all = []
@@ -220,5 +372,58 @@ def lstm_predict_array(
     full_array = np.full(len(df), np.nan)
     full_array[:window_size] = y_pred_final[:, target_idx]
     full_array[window_size:] = y_pred_final[:, target_idx]
+    
+    return full_array
+
+def cnn_predict_array(
+    df:pd.DataFrame,
+    model:Sequential, 
+    scaler:MinMaxScaler, 
+    features:List[str], 
+    window_size:int, 
+    target_col:str = "T_Q"
+) -> np.ndarray:
+    
+    df_travail = df.copy()
+    
+    # 1. Préparation du temps
+    if 'time' in df_travail.columns:
+        df_travail['time'] = pd.to_datetime(df_travail['time']).astype('int64') // 10**9
+    
+    # 2. Scaling
+    df_pour_scaler = df_travail[features]
+    values_norm = scaler.transform(df_pour_scaler)
+    values_masked = np.nan_to_num(values_norm, nan=-1.0)
+    
+    # 3. Création des fenêtres
+    X_all = []
+    for i in range(window_size, len(values_masked)):
+        X_all.append(values_masked[i-window_size:i, :])
+    X_all = np.array(X_all, dtype='float32')
+    
+    if len(X_all) == 0:
+        return np.full(len(df), np.nan)
+    
+    # 4. Prédiction (Sortie: [Nb_fenetres, 120, 13])
+    y_pred_norm = model.predict(X_all, verbose=0)
+    
+    # 5. Extraction de la dernière valeur de chaque fenêtre (Many-to-Many -> Many-to-One)
+    # On prend [toutes les fenêtres, le dernier pas de temps (index -1), toutes les features]
+    y_pred_last_step = y_pred_norm[:, -1, :] 
+    
+    # 6. Inverse Transform (Maintenant c'est du 2D: [Nb_fenetres, 13])
+    y_pred_final = scaler.inverse_transform(y_pred_last_step)
+    
+    # 7. Extraction de la colonne cible
+    target_idx = features.index(target_col)
+    values_target = y_pred_final[:, target_idx]
+    
+    # 8. Reconstruction du vecteur final
+    # Attention : la première prédiction correspond au point 'window_size'
+    full_array = np.full(len(df), np.nan)
+    
+    # On remplit à partir de l'index window_size jusqu'à la fin
+    # Si len(df) = 500 et window_size = 120, on a 380 prédictions
+    full_array[window_size:] = values_target
     
     return full_array

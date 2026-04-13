@@ -2,7 +2,7 @@ import os
 os.environ["KERAS_BACKEND"] = "torch"
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 from keras.models import Sequential
-from keras.layers import Dense, LSTM, Bidirectional, Dropout, Conv1D, MaxPooling1D
+from keras.layers import Dense, LSTM, Bidirectional, Dropout, Conv1D, MaxPooling1D, Flatten
 from keras.callbacks import EarlyStopping, History
 import torch
 import keras
@@ -59,12 +59,12 @@ def fit(
     """    
     if callback is None :
         callback = EarlyStopping(monitor='val_loss',
-                                 patience=1,
+                                 patience=10,
                                  restore_best_weights=True)
     return model.fit(
         X_train, y_train, 
-        epochs=1, 
-        batch_size=32, 
+        epochs=1000, 
+        batch_size=64, 
         validation_data=(X_val, y_val),
         callbacks=[callback],
         verbose=1
@@ -229,17 +229,14 @@ def cnn(
         History: Historique de l'entrainement du model
     """    
     model = Sequential()
-    model.add(Conv1D(64, 3, activation="tanh", padding="same"))
-    model.add(Conv1D(64, 3, activation="tanh", padding="same"))
-    model.add(Conv1D(64, 3, activation="tanh", padding="same"))
-    model.add(MaxPooling1D(2))
-    model.add(LSTM(128))
+    model.add(Conv1D(64, 48, activation="tanh", padding="same", input_shape=(X_train.shape[1], X_train.shape[2])))
+    model.add(Conv1D(128, 12, activation="tanh", padding="same"))
+    model.add(Dense(500, activation="tanh"))
     model.add(Dropout(0.3))
-    model.add(Dense(64, activation="tanh"))
-    model.add(Dense(12, activation="tanh"))
+    model.add(Dense(120, activation="tanh"))
     model.add(Dense(X_train.shape[2])) 
 
-    model.compile(optimizer='adam', loss=masked_mse)
+    model.compile(optimizer='adam',loss="mse", metrics=['mae'])
 
     history = fit(model, X_train, y_train, X_val, y_val)
 
