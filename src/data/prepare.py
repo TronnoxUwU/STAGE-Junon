@@ -202,10 +202,10 @@ def creer_sequences_par_bss_cnn(
     for _, group in df.groupby('code_bss'):
         group = group.sort_values(by='time_num', ascending=croissant).copy()
 
-        # 🔹 On garde une version complète pour y
+        # On garde une version complète pour y
         group_full = group.copy()
 
-        # 🔹 On applique les trous sur UNE feature (ou plusieurs si tu veux)
+        # On applique les trous sur UNE feature (ou plusieurs si tu veux)
         for feature in features:
             result = generate_missing_data_NN(
                 group,
@@ -297,19 +297,29 @@ def train_data_cnn(
     # 1. Préparation
     if saine :
         df = df.dropna()
-        
 
     features = ["niveau_nappe_eau","lon","lat","time","ETP_Q","PRELIQ_Q","T_Q","surface_imp","surface_totale"]
+    
     df_norm, mon_scaler = preparer_donnees(df, features, scaler_path, scaler)
-
     df_norm = df_norm.fillna(-1)
 
     # 2. Création des fenêtres étanches (6 mois ici)
     features_pour_ia = [f if f != 'time' else 'time_num' for f in features]
-    X, y = creer_sequences_par_bss_cnn(df_norm, features_pour_ia, window_size=window_size, rng=np.random.default_rng(42), croissant=croissant)
 
-    # 4. Split Train/Val
-    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.8, random_state=42)
+    split_idx = int(len(df_norm) * 0.8)
+    df_train = df_norm.iloc[:split_idx]
+    df_val = df_norm.iloc[split_idx:]
+
+    rng = np.random.default_rng(42)
+
+    X_train, y_train = creer_sequences_par_bss_cnn(
+        df_train, features_pour_ia, window_size=window_size, rng=rng, croissant=croissant
+    )
+    
+    X_val, y_val = creer_sequences_par_bss_cnn(
+        df_val, features_pour_ia, window_size=window_size, rng=rng, croissant=croissant
+    )
+    
     return X_train, X_val, y_train, y_val, mon_scaler
 
 def lstm_predict_array(
@@ -410,20 +420,34 @@ def cnn_predict_array(
     # 5. Extraction de la dernière valeur de chaque fenêtre (Many-to-Many -> Many-to-One)
     # On prend [toutes les fenêtres, le dernier pas de temps (index -1), toutes les features]
     y_pred_last_step = y_pred_norm[:, -1, :] 
+
+    n_points = len(df)
+    sum_predictions = np.zeros((n_points, len(features)))
+    counts = np.zeros(n_points)
+
+    # On itère sur chaque fenêtre prédite
+    # La fenêtre i commence à l'index i et finit à i + window_size
+    for i in range(len(y_pred_norm)):
+        start_idx = i
+        end_idx = i + window_size
+        
+        sum_predictions[start_idx:end_idx] += y_pred_norm[i]
+        counts[start_idx:end_idx] += 1
+
+    # 6. Éviter la division par zéro et calculer la moyenne
+    # Les premiers et derniers points auront moins de contributeurs (counts < window_size)
+    counts[counts == 0] = np.nan 
+    avg_pred_norm = sum_predictions / counts[:, np.newaxis]
+
+    # 7. Inverse Transform sur les données moyennées
+    # On ne garde que les lignes où on a au moins une prédiction
+    mask = ~np.isnan(counts)
+    y_pred_final_full = np.full((n_points, len(features)), np.nan)
     
-    # 6. Inverse Transform (Maintenant c'est du 2D: [Nb_fenetres, 13])
-    y_pred_final = scaler.inverse_transform(y_pred_last_step)
+    y_pred_final_full[mask] = scaler.inverse_transform(avg_pred_norm[mask])
     
-    # 7. Extraction de la colonne cible
+    # 8. Extraction de la colonne cible
     target_idx = features.index(target_col)
-    values_target = y_pred_final[:, target_idx]
-    
-    # 8. Reconstruction du vecteur final
-    # Attention : la première prédiction correspond au point 'window_size'
-    full_array = np.full(len(df), np.nan)
-    
-    # On remplit à partir de l'index window_size jusqu'à la fin
-    # Si len(df) = 500 et window_size = 120, on a 380 prédictions
-    full_array[window_size:] = values_target
-    
-    return full_array
+    values_target = y_pred_final_full[:, target_idx]
+
+    return values_target

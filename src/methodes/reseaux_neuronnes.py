@@ -2,7 +2,7 @@ import os
 os.environ["KERAS_BACKEND"] = "torch"
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 from keras.models import Sequential
-from keras.layers import Dense, LSTM, Bidirectional, Dropout, Conv1D, MaxPooling1D, Flatten
+from keras.layers import Dense, LSTM, Bidirectional, Dropout, Conv1D, MaxPooling1D, Flatten, Conv2D, Reshape
 from keras.callbacks import EarlyStopping, History
 import torch
 import keras
@@ -63,8 +63,8 @@ def fit(
                                  restore_best_weights=True)
     return model.fit(
         X_train, y_train, 
-        epochs=1000, 
-        batch_size=64, 
+        epochs=50, 
+        batch_size=16, 
         validation_data=(X_val, y_val),
         callbacks=[callback],
         verbose=1
@@ -230,6 +230,9 @@ def cnn(
     """    
     model = Sequential()
     model.add(Conv1D(64, 48, activation="tanh", padding="same", input_shape=(X_train.shape[1], X_train.shape[2])))
+    model.add(Reshape((X_train.shape[1], 64, 1)))
+    model.add(Conv2D(32, (3, 9), activation="tanh", padding="same"))
+    model.add(Reshape((X_train.shape[1], 64 * 32)))
     model.add(Conv1D(128, 12, activation="tanh", padding="same"))
     model.add(Dense(500, activation="tanh"))
     model.add(Dropout(0.3))
