@@ -46,7 +46,7 @@ def load_etp(path):
     df["month"] = df["time"].dt.to_period("M")
 
     df_month = df.groupby(["lat", "lon", "month"]).agg({
-        "ETP_Q": "mean"
+        "ETP_Q": "sum"
     }).reset_index()
 
     df_month["time"] = df_month["month"].dt.to_timestamp()
