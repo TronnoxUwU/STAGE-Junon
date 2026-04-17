@@ -69,8 +69,7 @@ def generate_missing_data_NN(
         valeur_de_travail (str): Valeur sur laquel on veut faire des trous
         remove_pct (float): Pourcentage de trous que l'on veut atteindre
         rng (np.random.Generator): Generateur d'aléatoire
-        annee_deb (int, optional): Debut d'un trou. Defaults to 0.
-        annee_fin (int, optional): Fin d'un trou. Defaults to 0.
+        taille (tuple[int]): Taille des troues créer
 
     Returns:
         Optional[Tuple[pd.DataFrame, np.ndarray, str]]: tuple composé de 

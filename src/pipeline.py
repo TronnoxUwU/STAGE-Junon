@@ -100,6 +100,8 @@ def methodes_completion(input_folder, ouput_folder, travail, cluster, dossier_mo
 
     mon_scaler = joblib.load(f"{fichier_scaler}/scaler.save")
 
+    df_all = charger_dossier(input_folder)
+
     os.makedirs(ouput_folder, exist_ok=True)
     
     if summary is None :
@@ -158,17 +160,22 @@ def methodes_completion(input_folder, ouput_folder, travail, cluster, dossier_mo
             if "knn" in methodes["methodes"]:
                 result["vrai"]["knn"] = knn_impute(df, valeur_de_travail)
                 result["erreur"]["knn"] = knn_impute(df_error, valeur_de_travail)
+            if "knn_nappe" in methodes["methodes"]:
+                result["vrai"]["knn"] = knn_nappe(df, df_all, valeur_de_travail)
+                result["erreur"]["knn"] = knn_nappe(df_error, df_all, valeur_de_travail)
             if "bss" in methodes["methodes"]:
                 result["vrai"]["bss"] = bootstrap_saisonnier_impute(df, valeur_de_travail)
                 result["erreur"]["bss"] = bootstrap_saisonnier_impute(df_error, valeur_de_travail)
-            if model[valeur_de_travail] != {} or not window_size<=len(df):
+            # if model[valeur_de_travail] != {} or not window_size<=len(df):
                 
-                for name, m in model[valeur_de_travail].items():
-                    result["vrai"][name] = lstm_predict_array(df, m, mon_scaler, features, window_size=window_size, target_col=valeur_de_travail)
-                    result["erreur"][name] = lstm_predict_array(df_error, m, mon_scaler, features, window_size=window_size, target_col=valeur_de_travail)
+            #     for name, m in model[valeur_de_travail].items():
+            #         result["vrai"][name] = lstm_predict_array(df, m, mon_scaler, features, window_size=window_size, target_col=valeur_de_travail)
+            #         result["erreur"][name] = lstm_predict_array(df_error, m, mon_scaler, features, window_size=window_size, target_col=valeur_de_travail)
 
             for m, res in result["erreur"].items():
                 ligne[f"{m}_{valeur_de_travail}"] = nrmse(res, y_full)
+
+                print(res, y_full)
 
                 df[f"{m}_{valeur_de_travail}"] = result["vrai"][m]
 

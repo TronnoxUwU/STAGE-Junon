@@ -27,7 +27,7 @@ def load_meteo(path):
     })
 
     df["time"] = pd.to_datetime(df["time"].astype(str), format="%Y%m")
-    df["PRELIQ_Q"] /= df["time"].dt.days_in_month
+    # df["PRELIQ_Q"] /= df["time"].dt.days_in_month on veut le total au mois et non la moyenne.
 
     return df.sort_values("time").reset_index(drop=True)
 

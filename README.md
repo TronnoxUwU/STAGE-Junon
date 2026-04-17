@@ -45,9 +45,9 @@ jupyter nbconvert --to script
 ## Données à réccupérer
 
 - [x] niveau_nappe_eau : https://ades.eaufrance.fr/recherche
-- [x] PRELIQ_Q : https://www.data.gouv.fr/datasets/donnees-climatologiques-de-base-mensuelles
-- [x] T_Q : https://www.data.gouv.fr/datasets/donnees-climatologiques-de-base-mensuelles
-- [x] ETP_Q : https://www.data.gouv.fr/datasets/etp-fao-hargreaves
+- [x] PRELIQ_Q(total sur le mois)(en mm): https://www.data.gouv.fr/datasets/donnees-climatologiques-de-base-mensuelles
+- [x] T_Q(moyenne sur le mois)(en °C): https://www.data.gouv.fr/datasets/donnees-climatologiques-de-base-mensuelles
+- [x] ETP_Q(total sur le mois): https://www.data.gouv.fr/datasets/etp-fao-hargreaves
 
 - [x] Imperméabilité des sols : https://www.data.gouv.fr/datasets/impermeabilisation-des-sols-donnees-par-region-departement-scot-commune-et-epci
 

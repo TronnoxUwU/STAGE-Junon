@@ -203,3 +203,129 @@ def bootstrap_saisonnier_impute(
     df[valeur_de_travail] = df[valeur_de_travail].fillna(df['valeur_type'])
     
     return df[valeur_de_travail].to_numpy()
+
+def compute_fft(series):
+    series = series.ffill().bfill()
+    series = series - series.mean()
+
+    fft_vals = np.fft.fft(series.values)
+    return np.abs(fft_vals)
+
+
+def compute_similarity_fft(amp1, amp2, n_freq=10):
+    # On détermine la taille maximale possible (le minimum entre les deux et n_freq)
+    # On commence à 1 pour ignorer la composante continue (index 0)
+    limit = min(len(amp1), len(amp2), n_freq + 1)
+    
+    if limit <= 2: # Pas assez de points pour une corrélation significative
+        return 0.0
+    
+    v1 = amp1[1:limit]
+    v2 = amp2[1:limit]
+    
+    return np.corrcoef(v1, v2)[0, 1]
+
+
+def compute_lag(x, y, max_lag=24):
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+
+    if len(x) != len(y):
+        min_len = min(len(x), len(y))
+        x = x[:min_len]
+        y = y[:min_len]
+
+    best_lag = 0
+    best_corr = -1.0  # La corrélation est entre -1 et 1
+
+    for lag in range(-max_lag, max_lag + 1):
+        if lag < 0:
+            xs, ys = x[:lag], y[-lag:]
+        elif lag > 0:
+            xs, ys = x[lag:], y[:-lag]
+        else:
+            xs, ys = x, y
+
+        mask = ~np.isnan(xs) & ~np.isnan(ys)
+        xs_clean, ys_clean = xs[mask], ys[mask]
+
+
+        if len(xs_clean) < 5:
+            continue
+            
+        std_x, std_y = np.std(xs_clean), np.std(ys_clean)
+        if std_x == 0 or std_y == 0:
+            continue
+
+        corr = np.corrcoef(xs_clean, ys_clean)[0, 1]
+        
+        if not np.isnan(corr) and corr > best_corr:
+            best_corr = corr
+            best_lag = lag
+
+    return best_lag
+
+def knn_nappe(
+    df: pd.DataFrame,
+    df_all: pd.DataFrame,
+    valeur_de_travail: str = "niveau_nappe_eau",
+    n_top: int = 3
+):
+    df = df.copy()
+    df["time"] = pd.to_datetime(df["time"])
+    df = df.set_index("time")
+
+    target = df[valeur_de_travail]
+
+    target_code = df['code_bss'].iloc[0]
+
+    pivot_all = df_all[df_all['code_bss'] != target_code].pivot(
+        index="time",
+        columns="code_bss",
+        values=valeur_de_travail
+    )
+    pivot_all.index = pd.to_datetime(pivot_all.index)
+
+    amp_target = compute_fft(target)
+
+    similarities = {}
+
+    for col in pivot_all.columns:
+
+        amp = compute_fft(pivot_all[col])
+        sim = compute_similarity_fft(amp_target, amp)
+
+        similarities[col] = sim
+
+    best_nappes = sorted(similarities, key=similarities.get, reverse=True)[:n_top]
+
+    aligned_series = []
+
+    for col in best_nappes:
+        other = pivot_all[col].reindex(target.index)
+
+        lag = compute_lag(
+            target.ffill(),
+            other.ffill()
+        )
+
+        aligned_series.append(other.shift(lag))
+
+    aligned_df = pd.concat(aligned_series, axis=1)
+
+    target_mean = target.mean()
+
+    adjusted_series = []
+    for col in aligned_df.columns:
+        s = aligned_df[col]
+        adjusted_s = s - s.mean() + target_mean
+        adjusted_series.append(adjusted_s)
+
+    reconstructed = pd.concat(adjusted_series, axis=1).mean(axis=1)
+
+    result = target.copy()
+    mask = result.isna()
+    result.loc[mask] = reconstructed.loc[mask]
+
+    final_series = result.reset_index()
+    return final_series[valeur_de_travail]

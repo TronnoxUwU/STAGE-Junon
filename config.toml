@@ -35,15 +35,15 @@ local = false
 [completion]
 [completion.niveau_nappe_eau]
 realiser = true
-methodes = ["polynome"]
+methodes = ["knn_nappe"]
 
 [completion.PRELIQ_Q]
-realiser = true
+realiser = false
 methodes = ["lineaire","cubique", "global/CNN"]
 
 [completion.T_Q]
+realiser = false
 methodes = []
-realiser = true
 
 [completion.ETP_Q]
 realiser = false
@@ -54,7 +54,7 @@ methodes = []
 departements = [45] # liste des departements avec lesquels on veut travailler
 qualite = 30 # nombre d'année de donné que possède châque dataset. valeur : 30, 20, 10, 5, 0
 
-type = [] # type de nappe sur lequel on veut travailler. valeur : "reactive", "inertielle"  ou []
+type = [] # type de nappe sur lequel on veut travailler. valeur : ["reactive", "inertielle"]  ou []
 
 extraction = false
 fusion = false
