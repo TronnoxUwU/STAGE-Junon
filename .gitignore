@@ -6,3 +6,6 @@ brouillon.md
 LSTM/*
 test.py
 __pycache__/
+
+*.out
+*.job
