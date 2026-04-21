@@ -35,7 +35,7 @@ local = false
 [completion]
 [completion.niveau_nappe_eau]
 realiser = true
-methodes = ["knn_nappe"]
+methodes = ["knn_nappe", "lineaire"]
 
 [completion.PRELIQ_Q]
 realiser = false

@@ -12,9 +12,10 @@ from methodes import cnn_model, lstm_model, bilstm_model, fit
 #  Hyperparamètres à explorer
 # ─────────────────────────────────────────────
 learning_rates = [1e-4, 1e-3]
-weight_decays  = [0.0, 1e-5, 1e-4]
+weight_decays  = [0.0, 1e-5, 1e-4] # mettre peut etre a la place du batch size
 n_units_list   = [32, 64]
-dropouts       = [0.2, 0.3]
+dropouts       = [0.2, 0.3,0.4,0.5]
+
 
 models_dict = {
     "cnn":    cnn_model,

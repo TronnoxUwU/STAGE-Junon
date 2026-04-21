@@ -39,7 +39,7 @@ def nrmse(
         float: Resultat
     """    
     range_val = np.max(reelle)
-    if range_val == 0: return 0
+    if range_val == 0: return -10000000000
     # On calcule la RMSE standard puis on normalise
     return np.sqrt(np.mean((reelle - prediction) ** 2)) / range_val
 
@@ -96,10 +96,9 @@ def compute_interpolations(
         "KNN": knn_impute(df, valeur_de_travail),
         "Bootstrap saisonier": bootstrap_saisonnier_impute(df, valeur_de_travail),
         "Random forest": random_forest_delta_array(df, valeur_de_travail),
-        "LSTM" : lstm_predict_array(df, models["LSTM"], mon_scaler, features, window_size=60, target_col=valeur_de_travail),
-        "BILSTM" : lstm_predict_array(df, models["BILSTM"], mon_scaler, features, window_size=6, target_col=valeur_de_travail),
-        "LSTM2" : lstm_predict_array(df, models["LSTM2"], mon_scaler, features, window_size=60, target_col=valeur_de_travail),
-        "CNN" : lstm_predict_array(df, models["CNN"], mon_scaler, features, window_size=6, target_col=valeur_de_travail),
+        "LSTM" : lstm_predict_array(df, models["LSTM"], mon_scaler, features, window_size=120, target_col=valeur_de_travail),
+        "BILSTM" : lstm_predict_array(df, models["BILSTM"], mon_scaler, features, window_size=120, target_col=valeur_de_travail),
+        "CNN" : cnn_predict_array(df, models["CNN"], mon_scaler, features, window_size=120, target_col=valeur_de_travail),
     }
 
 
@@ -184,15 +183,15 @@ def evaluate_all_files(
                 break
 
             try:
-                prepared = generate_missing_data(charger_fichier(file), file, valeur_de_travail, remove_pct, rng)
+                prepared = generate_missing_data_NN(charger_fichier(file), valeur_de_travail, remove_pct, rng, (1,6))
                 if prepared is None:
                     continue
 
-                df, y_full, ds_name = prepared
+                df, y_full = prepared
 
                 methods = compute_interpolations(df, valeur_de_travail, models, mon_scaler)
 
-                rows = evaluate_methods(methods, y_full, ds_name, remove_pct)
+                rows = evaluate_methods(methods, y_full, file, remove_pct)
                 all_rows.extend(rows)
 
                 processed_count += 1

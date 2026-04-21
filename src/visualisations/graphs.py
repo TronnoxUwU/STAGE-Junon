@@ -286,7 +286,7 @@ def plot_mean_errors_by_method(error_df, processed_count, valeur_de_travail):
     plt.grid(True, linestyle='--', alpha=0.4)
     plt.show()
 
-def plot_nappes(dossier, valeur_de_travail="niveau_nappe_eau"):
+def plot_nappes(dossier, valeur_de_travail="niveau_nappe_eau", valeur_de_travail2=None):
     fichiers = glob.glob(os.path.join(dossier, "*.csv"))
 
     for fichier in fichiers:
@@ -303,6 +303,8 @@ def plot_nappes(dossier, valeur_de_travail="niveau_nappe_eau"):
             # Plot
             plt.figure(figsize=(10,5))
             plt.plot(df['time'], df[valeur_de_travail])
+            if valeur_de_travail2:
+                plt.plot(df['time'], df[valeur_de_travail2])
             plt.title(f"Nappe : {os.path.basename(fichier)}")
             plt.xlabel("Temps")
             plt.ylabel(valeur_de_travail)

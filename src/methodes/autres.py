@@ -204,7 +204,17 @@ def bootstrap_saisonnier_impute(
     
     return df[valeur_de_travail].to_numpy()
 
-def compute_fft(series):
+def compute_fft(
+    series: np.ndarray
+) -> np.ndarray:
+    """Renvois la signature d'une suite
+
+    Args:
+        series (np.ndarray): La suite
+
+    Returns:
+        np.ndarray: La signature
+    """    
     series = series.ffill().bfill()
     series = series - series.mean()
 
@@ -212,7 +222,21 @@ def compute_fft(series):
     return np.abs(fft_vals)
 
 
-def compute_similarity_fft(amp1, amp2, n_freq=10):
+def compute_similarity_fft(
+    amp1: np.ndarray, 
+    amp2: np.ndarray, 
+    n_freq=10
+) -> float:
+    """donnes la similarité entre de signature de nappes
+
+    Args:
+        amp1 (np.ndarray): signature d'une suite
+        amp2 (np.ndarray): signature d'une autre suite
+        n_freq (int, optional): nombre de frequence a prendre en compte dans la signature. Defaults to 10.
+
+    Returns:
+        float: la similarité entre les 2 suites
+    """    
     # On détermine la taille maximale possible (le minimum entre les deux et n_freq)
     # On commence à 1 pour ignorer la composante continue (index 0)
     limit = min(len(amp1), len(amp2), n_freq + 1)
@@ -226,7 +250,21 @@ def compute_similarity_fft(amp1, amp2, n_freq=10):
     return np.corrcoef(v1, v2)[0, 1]
 
 
-def compute_lag(x, y, max_lag=24):
+def compute_lag(
+    x: np.ndarray, 
+    y: np.ndarray, 
+    max_lag:int=24
+) -> float:
+    """Trouve le meilleur décalage pour faire corespondre les 2 nappes
+
+    Args:
+        x (np.ndarray): une premiere suite
+        y (np.ndarray): une seconde suite
+        max_lag (int, optional): Le maximum de decalage que l'on s'autorise à chercher. Defaults to 24.
+
+    Returns:
+        float: Le meilleur décalage
+    """    
     x = np.asarray(x, dtype=float)
     y = np.asarray(y, dtype=float)
 
@@ -271,6 +309,17 @@ def knn_nappe(
     valeur_de_travail: str = "niveau_nappe_eau",
     n_top: int = 3
 ):
+    """Impute une nappe sur la base d'un plus proche voisin choisi à partir de leur signature
+
+    Args:
+        df (pd.DataFrame): le dataframe à compléter
+        df_all (pd.DataFrame): l'ensemble des dataframes
+        valeur_de_travail (str, optional): _description_. Defaults to "niveau_nappe_eau".
+        n_top (int, optional): _description_. Defaults to 3.
+
+    Returns:
+        _type_: _description_
+    """    
     df = df.copy()
     df["time"] = pd.to_datetime(df["time"])
     df = df.set_index("time")
@@ -298,6 +347,9 @@ def knn_nappe(
         similarities[col] = sim
 
     best_nappes = sorted(similarities, key=similarities.get, reverse=True)[:n_top]
+    print("Nappes sélectionnées pour la complétion :")
+    for code in best_nappes:
+        print(f"- {code} (similarité = {similarities[code]:.4f})")
 
     aligned_series = []
 
@@ -313,13 +365,42 @@ def knn_nappe(
 
     aligned_df = pd.concat(aligned_series, axis=1)
 
+    reconstructed = aligned_df.mean(axis=1)
+
     target_mean = target.mean()
 
     adjusted_series = []
+
     for col in aligned_df.columns:
         s = aligned_df[col]
-        adjusted_s = s - s.mean() + target_mean
-        adjusted_series.append(adjusted_s)
+
+        result_s = target.copy()
+
+        # point de départ = première valeur connue commune
+        common_idx = target.notna() & s.notna()
+
+        if not common_idx.any():
+            # fallback
+            adjusted_s = s - s.mean() + target_mean
+            adjusted_series.append(adjusted_s)
+            continue
+
+        start_idx = common_idx[common_idx].index[0]
+
+        # on initialise
+        result_s.loc[start_idx] = target.loc[start_idx]
+
+        # propagation vers l’avant
+        for i in range(1, len(result_s)):
+            idx_prev = result_s.index[i-1]
+            idx_curr = result_s.index[i]
+
+            if pd.isna(result_s.loc[idx_curr]):
+                if pd.notna(s.loc[idx_curr]) and pd.notna(s.loc[idx_prev]):
+                    delta = s.loc[idx_curr] - s.loc[idx_prev]
+                    result_s.loc[idx_curr] = result_s.loc[idx_prev] + delta
+
+        adjusted_series.append(result_s)
 
     reconstructed = pd.concat(adjusted_series, axis=1).mean(axis=1)
 
@@ -328,4 +409,5 @@ def knn_nappe(
     result.loc[mask] = reconstructed.loc[mask]
 
     final_series = result.reset_index()
-    return final_series[valeur_de_travail]
+    return final_series[valeur_de_travail].to_numpy()
+    

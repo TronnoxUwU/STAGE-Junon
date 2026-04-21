@@ -64,7 +64,7 @@ def fit(
     return model.fit(
         X_train, y_train, 
         epochs=50, 
-        batch_size=16, 
+        batch_size=256, 
         validation_data=(X_val, y_val),
         callbacks=[callback],
         verbose=1
@@ -267,11 +267,9 @@ def lstm(
         History: Historique de l'entrainement du model
     """    
     model = Sequential()
-    model.add(Dense(12, activation="tanh"))
-    model.add(Dense(32, activation="tanh"))
-    model.add(LSTM(64, return_sequences=True))
+    model.add(LSTM(64, return_sequences=True, input_shape=(X_train.shape[1], X_train.shape[2])))
     model.add(Dropout(0.3))
-    model.add(LSTM(32))
+    model.add(LSTM(32, return_sequences=True))
     model.add(Dropout(0.3))
     model.add(Dense(12, activation="tanh"))
     model.add(Dense(12, activation="tanh"))
@@ -305,11 +303,11 @@ def bilstm(
         History: Historique de l'entrainement du model
     """    
     model = Sequential()
-    model.add(Dense(12, activation="tanh"))
-    model.add(Dense(32, activation="tanh"))
+    model.add(Bidirectional(LSTM(64, return_sequences=True, input_shape=(X_train.shape[1], X_train.shape[2]))))
+    model.add(Bidirectional(LSTM(64, return_sequences=True)))
     model.add(Bidirectional(LSTM(64, return_sequences=True)))
     model.add(Dropout(0.3))
-    model.add(LSTM(32))
+    model.add(LSTM(32, return_sequences=True))
     model.add(Dropout(0.3))
     model.add(Dense(32, activation="tanh"))
     model.add(Dense(12, activation="tanh"))

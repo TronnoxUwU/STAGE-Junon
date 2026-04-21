@@ -111,7 +111,7 @@ def methodes_completion(input_folder, ouput_folder, travail, cluster, dossier_mo
         df = charger_fichier(file)
         df['time_num'] = df['time'].astype('int64') // 10**9
 
-        df.sort_values(by='time_num', ascending=False)
+        df = df.sort_values(by='time_num', ascending=True)
 
         ligne = {
             "code_bss": df["code_bss"].iloc[0],
@@ -126,12 +126,14 @@ def methodes_completion(input_folder, ouput_folder, travail, cluster, dossier_mo
 
             df_error = df.copy()
 
-            res = generate_missing_data(df_error, file, valeur_de_travail, remove_pct, np.random.default_rng(), troue_deb, troue_fin)
+            res = generate_missing_data_NN(df_error, valeur_de_travail, remove_pct, np.random.default_rng(), (1,5))
+            #res = generate_missing_data(df_error, file, valeur_de_travail, remove_pct, np.random.default_rng(), troue_deb, troue_fin)
             
             if res is None :
                 continue
 
-            df_error, y_full, _ = res
+            df_error, y_full = res
+            #df_error, y_full, _ = res
 
             result = {"vrai": {},
                     "erreur": {}}
@@ -161,8 +163,8 @@ def methodes_completion(input_folder, ouput_folder, travail, cluster, dossier_mo
                 result["vrai"]["knn"] = knn_impute(df, valeur_de_travail)
                 result["erreur"]["knn"] = knn_impute(df_error, valeur_de_travail)
             if "knn_nappe" in methodes["methodes"]:
-                result["vrai"]["knn"] = knn_nappe(df, df_all, valeur_de_travail)
-                result["erreur"]["knn"] = knn_nappe(df_error, df_all, valeur_de_travail)
+                result["vrai"]["knn_nappe"] = knn_nappe(df, df_all, valeur_de_travail, n_top=10)
+                result["erreur"]["knn_nappe"] = knn_nappe(df_error, df_all, valeur_de_travail, n_top=10)
             if "bss" in methodes["methodes"]:
                 result["vrai"]["bss"] = bootstrap_saisonnier_impute(df, valeur_de_travail)
                 result["erreur"]["bss"] = bootstrap_saisonnier_impute(df_error, valeur_de_travail)
@@ -173,9 +175,15 @@ def methodes_completion(input_folder, ouput_folder, travail, cluster, dossier_mo
             #         result["erreur"][name] = lstm_predict_array(df_error, m, mon_scaler, features, window_size=window_size, target_col=valeur_de_travail)
 
             for m, res in result["erreur"].items():
-                ligne[f"{m}_{valeur_de_travail}"] = nrmse(res, y_full)
+                mask = (~(np.isnan(res) | np.isnan(y_full))) & (df_error[valeur_de_travail].isna().to_numpy())
 
-                print(res, y_full)
+
+
+                if np.any(mask):
+                    ligne[f"{m}_{valeur_de_travail}"] = nrmse(res[mask], y_full[mask])
+                else:
+                    # Si aucun point n'a pu être comparé, on met NaN pour ne pas fausser les moyennes
+                    ligne[f"{m}_{valeur_de_travail}"] = np.nan
 
                 df[f"{m}_{valeur_de_travail}"] = result["vrai"][m]
 
@@ -291,7 +299,7 @@ if __name__ == "__main__":
                 config["dossier"]["dossier_model"],
                 config["dossier"]["dossier_scaler"],
                 config["entrainement_model"]["window_size"],
-                0.1,
+                0.2,
                 1990,1990,
                 summary
             )
