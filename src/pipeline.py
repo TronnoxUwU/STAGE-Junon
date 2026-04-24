@@ -49,11 +49,11 @@ def extraction(output_folder, tmp_folder, departements, names):
         departements=departements
     )
 
-def fusion(output_folder,input_folder, names):
+def fusion(output_folder,input_folder, names, methodes):
     os.makedirs(output_folder, exist_ok=True)
 
     print(f"[CHARGEMENT] {input_folder}/{names["meteo_name_extraction"]}.csv")
-    meteo = load_meteo(f"{input_folder}/{names["meteo_name_extraction"]}.csv")
+    meteo = load_meteo(f"{input_folder}/{names["meteo_name_extraction"]}.csv", methode=methodes['PRELIQ_Q'])
 
     print(f"[CHARGEMENT] {input_folder}/{names["etp_name_extraction"]}.csv")
     etp = load_etp(f"{input_folder}/{names["etp_name_extraction"]}.csv")
@@ -168,11 +168,10 @@ def methodes_completion(input_folder, ouput_folder, travail, cluster, dossier_mo
             if "bss" in methodes["methodes"]:
                 result["vrai"]["bss"] = bootstrap_saisonnier_impute(df, valeur_de_travail)
                 result["erreur"]["bss"] = bootstrap_saisonnier_impute(df_error, valeur_de_travail)
-            # if model[valeur_de_travail] != {} or not window_size<=len(df):
-                
-            #     for name, m in model[valeur_de_travail].items():
-            #         result["vrai"][name] = lstm_predict_array(df, m, mon_scaler, features, window_size=window_size, target_col=valeur_de_travail)
-            #         result["erreur"][name] = lstm_predict_array(df_error, m, mon_scaler, features, window_size=window_size, target_col=valeur_de_travail)
+            if model[valeur_de_travail] != {} or not window_size<=len(df):
+                for name, m in model[valeur_de_travail].items():
+                    result["vrai"][name] = cnn_predict_array(df, m, mon_scaler, features, window_size=window_size, target_col=valeur_de_travail)
+                    result["erreur"][name] = cnn_predict_array(df_error, m, mon_scaler, features, window_size=window_size, target_col=valeur_de_travail)
 
             for m, res in result["erreur"].items():
                 mask = (~(np.isnan(res) | np.isnan(y_full))) & (df_error[valeur_de_travail].isna().to_numpy())
@@ -199,7 +198,7 @@ def entrainement_création_NNs(dossier_nappe, window_size, fichier_scaler, dossi
         scaler =  joblib.load(f"{fichier_scaler}/scaler.save")
     else :
         scaler = None
-    X_train, X_val, y_train, y_val, scaler = train_data(charger_dossier(dossier_nappe), window_size, fichier_scaler, scaler, croissant=False)
+    X_train, X_val, y_train, y_val, scaler = train_data_cnn(charger_dossier(dossier_nappe), window_size, fichier_scaler, scaler, croissant=False)
 
     if "CNN" in models:
         cnn(X_train, y_train, X_val, y_val, dossier_model)
@@ -236,7 +235,8 @@ if __name__ == "__main__":
         fusion(
             config["dossier"]["dossier_fusion"],
             config["dossier"]["dossier_extraction"],
-            config["dossier"]
+            config["dossier"],
+            config["fusion"]["PRELIQ_Q"]
         )
 
     if config["pipeline"]["clusterisation"]:
@@ -304,5 +304,35 @@ if __name__ == "__main__":
                 summary
             )
         pd.DataFrame(summary).to_csv(f"{config["dossier"]["dossier_summary"]}/{config["dossier"]["summary_name"]}", sep=";", index=False)
+
+    if config["pipeline"]["affichage"]:
+        import seaborn as sns
+        import matplotlib.pyplot as plt
+
+        df = pd.read_csv(f"{config["dossier"]["dossier_summary"]}/{config["dossier"]["summary_name"]}", sep=";")
+
+        df_heatmap = df.drop(columns=["lat", "lon", "cluster"], errors="ignore")
+
+        df_heatmap = df_heatmap.set_index("code_bss")
+
+        vmax_value = df_heatmap.fillna(0).to_numpy().max()
+        vmean_value = df_heatmap.fillna(0).to_numpy().mean()
+
+
+        plt.figure(figsize=(8, 6)) 
+
+        # Création de la heatmap
+        sns.heatmap(
+            df_heatmap,
+            vmin=0,
+            vmax=vmean_value*2,
+            center=None,
+            square=True,
+            linewidths=0
+        )
+        
+
+        plt.title("Heatmap des corrélations")
+        plt.show()
 
         

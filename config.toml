@@ -32,6 +32,9 @@ global = true
 fine_tune = true
 local = false
 
+[fusion]
+PRELIQ_Q = "sum" # valeur : "sum" ou "mean"
+
 [completion]
 [completion.niveau_nappe_eau]
 realiser = true
@@ -60,4 +63,5 @@ extraction = false
 fusion = false
 clusterisation = false
 entrainement = false
-completion = true
+completion = false
+affichage = true

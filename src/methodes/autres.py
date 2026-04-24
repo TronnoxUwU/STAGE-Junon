@@ -347,9 +347,6 @@ def knn_nappe(
         similarities[col] = sim
 
     best_nappes = sorted(similarities, key=similarities.get, reverse=True)[:n_top]
-    print("Nappes sélectionnées pour la complétion :")
-    for code in best_nappes:
-        print(f"- {code} (similarité = {similarities[code]:.4f})")
 
     aligned_series = []
 

@@ -241,7 +241,16 @@ def cnn(
 
     model.compile(optimizer='adam',loss="mse", metrics=['mae'])
 
-    history = fit(model, X_train, y_train, X_val, y_val)
+    callback = EarlyStopping(monitor='val_loss',
+                                 patience=10,
+                                 restore_best_weights=True)
+    history = model.fit(
+        X_train, y_train, 
+        epochs=50, 
+        batch_size=10, 
+        validation_data=(X_val, y_val),
+        callbacks=[callback],
+        verbose=1)
 
     model.save(dossier_model + "CNN.keras")
 

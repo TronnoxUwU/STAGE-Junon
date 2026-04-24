@@ -358,6 +358,53 @@ def train_data_cnn(
     
     return X_train, X_val, y_train, y_val, mon_scaler
 
+def train_data_variation(
+    df: pd.DataFrame, 
+    window_size: int, 
+    scaler_path: str = "../", 
+    scaler: MinMaxScaler = None,
+    croissant: bool = True,
+    saine: bool = False,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, MinMaxScaler]:
+    
+    # 1. Préparation et calcul de la variation
+    if saine:
+        df = df.dropna()
+
+    # On trie par groupe et par temps pour être sûr que le calcul du delta est correct
+    df = df.sort_values(by=['code_bss', 'time'], ascending=[True, croissant])
+
+    # Calcul de la variation : un = x_{n-1} - x_n
+    # Note : .diff() fait (xn - xn-1), on prend donc l'opposé pour coller à ta demande
+    # On fait cela par groupe (code_bss) pour ne pas calculer de delta entre deux stations différentes
+    df['niveau_nappe_eau'] = df.groupby('code_bss')['niveau_nappe_eau'].transform(
+        lambda x: (x.shift(1) - x).fillna(0)
+    )
+
+    features = ["niveau_nappe_eau", "lon", "lat", "time", "ETP_Q", "PRELIQ_Q", "T_Q", "surface_imp", "surface_totale"]
+    
+    df_norm, mon_scaler = preparer_donnees(df, features, scaler_path, scaler)
+    df_norm = df_norm.fillna(-1)
+
+    # 2. Création des fenêtres
+    features_pour_ia = [f if f != 'time' else 'time_num' for f in features]
+
+    split_idx = int(len(df_norm) * 0.8)
+    df_train = df_norm.iloc[:split_idx]
+    df_val = df_norm.iloc[split_idx:]
+
+    rng = np.random.default_rng(42)
+
+    X_train, y_train = creer_sequences_par_bss_cnn(
+        df_train, features_pour_ia, window_size=window_size, rng=rng, croissant=croissant
+    )
+    
+    X_val, y_val = creer_sequences_par_bss_cnn(
+        df_val, features_pour_ia, window_size=window_size, rng=rng, croissant=croissant
+    )
+    
+    return X_train, X_val, y_train, y_val, mon_scaler
+
 def lstm_predict_array(
     df: pd.DataFrame,
     model: Sequential,
@@ -478,7 +525,6 @@ def cnn_predict_array(
     
     # 5. Extraction de la dernière valeur de chaque fenêtre (Many-to-Many -> Many-to-One)
     # On prend [toutes les fenêtres, le dernier pas de temps (index -1), toutes les features]
-    y_pred_last_step = y_pred_norm[:, -1, :] 
 
     n_points = len(df)
     sum_predictions = np.zeros((n_points, len(features)))
@@ -510,3 +556,83 @@ def cnn_predict_array(
     values_target = y_pred_final_full[:, target_idx]
 
     return values_target
+
+def variation_predict_array(
+    df: pd.DataFrame,
+    model: Sequential, 
+    scaler: MinMaxScaler, 
+    features: List[str], 
+    window_size: int, 
+    target_col: str = "niveau_nappe_eau" # Changé pour ton cas d'usage
+) -> np.ndarray:
+    
+    df_travail = df.copy()
+    
+    # 1. Préparation du temps (identique)
+    if 'time' in df_travail.columns:
+        df_travail['time_num'] = pd.to_datetime(df_travail['time']).astype('int64') // 10**9
+    
+    features_scaler = [f if f != 'time' else 'time_num' for f in features]
+    
+    # 2. Scaling (On transforme les données, qui doivent déjà être des variations si tu suis la logique train)
+    # Note: Si df contient les niveaux absolus, il faut calculer les deltas AVANT le transform.
+    df_travail['niveau_nappe_eau'] = df_travail.groupby('code_bss')['niveau_nappe_eau'].transform(
+        lambda x: (x.shift(1) - x).fillna(0)
+    )
+    
+    # On remplace temporairement la feature par sa version delta pour le scaler
+    features_pour_pred = features_scaler
+    
+    values_norm = scaler.transform(df_travail[features_pour_pred])
+    values_masked = np.nan_to_num(values_norm, nan=-1.0)
+    
+    # 3. Création des fenêtres
+    X_all = []
+    for i in range(window_size, len(values_masked)):
+        X_all.append(values_masked[i-window_size:i, :])
+    X_all = np.array(X_all, dtype='float32')
+    
+    if len(X_all) == 0:
+        return np.full(len(df), np.nan)
+    
+    # 4. Prédiction
+    y_pred_norm = model.predict(X_all, verbose=0)
+    
+    # 5. Moyennage des prédictions (pour lisser les deltas prédits)
+    n_points = len(df)
+    sum_predictions = np.zeros((n_points, len(features)))
+    counts = np.zeros(n_points)
+
+    for i in range(len(y_pred_norm)):
+        start_idx = i
+        end_idx = i + window_size
+        sum_predictions[start_idx:end_idx] += y_pred_norm[i]
+        counts[start_idx:end_idx] += 1
+
+    counts[counts == 0] = np.nan 
+    avg_pred_norm = sum_predictions / counts[:, np.newaxis]
+
+    # 6. Inverse Transform pour obtenir les VARIATIONS réelles
+    mask = ~np.isnan(counts)
+    deltas_reconstruits = np.full((n_points, len(features)), np.nan)
+    deltas_reconstruits[mask] = scaler.inverse_transform(avg_pred_norm[mask])
+    
+    # 7. RECONSTITUTION DU NIVEAU ABSOLU
+    # On récupère le delta moyen pour la colonne cible
+    target_idx = features.index(target_col)
+    predicted_deltas = deltas_reconstruits[:, target_idx]
+    
+    # On part du niveau initial réel de la nappe
+    niveaux_reconstruits = np.zeros(n_points)
+    # On récupère la première valeur valide pour démarrer la reconstruction
+    niveaux_reconstruits[0] = df[target_col].iloc[0] 
+    
+    # Reconstitution : x_n = x_{n-1} - delta_n  (selon ta formule delta = x_n-1 - x_n)
+    for i in range(1, n_points):
+        delta = predicted_deltas[i]
+        if np.isnan(delta):
+            niveaux_reconstruits[i] = niveaux_reconstruits[i-1] # Ou gestion spécifique
+        else:
+            niveaux_reconstruits[i] = niveaux_reconstruits[i-1] + delta
+
+    return niveaux_reconstruits

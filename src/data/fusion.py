@@ -14,7 +14,7 @@ def nearest_point_valid(df_points, df_target, value_column):
 
     return df_valid, idx
 
-def load_meteo(path):
+def load_meteo(path, methode="sum"):
     df = pd.read_csv(path, sep=";")
 
     df = df[["AAAAMM", "RR", "TMM", "ETP", "LAT", "LON"]]
@@ -27,7 +27,8 @@ def load_meteo(path):
     })
 
     df["time"] = pd.to_datetime(df["time"].astype(str), format="%Y%m")
-    # df["PRELIQ_Q"] /= df["time"].dt.days_in_month on veut le total au mois et non la moyenne.
+    if methode == "mean":
+        df["PRELIQ_Q"] /= df["time"].dt.days_in_month
 
     return df.sort_values("time").reset_index(drop=True)
 

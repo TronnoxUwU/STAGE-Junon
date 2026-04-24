@@ -41,7 +41,7 @@ def nrmse(
     range_val = np.max(reelle)
     if range_val == 0: return -10000000000
     # On calcule la RMSE standard puis on normalise
-    return np.sqrt(np.mean((reelle - prediction) ** 2)) / range_val
+    return np.abs(np.sqrt(np.mean((reelle - prediction) ** 2)) / range_val)
 
 def nse(
     prediction:np.ndarray,
