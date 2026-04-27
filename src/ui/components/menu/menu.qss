@@ -1,0 +1,4 @@
+/* Styles pour Menu */
+QWidget#Menu {
+    background-color: transparent;
+}

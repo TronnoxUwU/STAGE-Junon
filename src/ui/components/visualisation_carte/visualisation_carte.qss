@@ -1,0 +1,4 @@
+/* Styles pour VisualisationCarte */
+QWidget#VisualisationCarte {
+    background-color: transparent;
+}

@@ -1,0 +1,4 @@
+/* Styles pour ExtractionDepartement */
+QWidget#ExtractionDepartement {
+    background-color: transparent;
+}

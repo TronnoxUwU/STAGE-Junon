@@ -1,0 +1,4 @@
+/* Styles pour Configuration */
+QWidget#Configuration {
+    background-color: transparent;
+}

@@ -1,0 +1,4 @@
+/* Styles pour Extraction */
+QWidget#Extraction {
+    background-color: transparent;
+}

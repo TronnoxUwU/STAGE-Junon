@@ -1,0 +1,4 @@
+/* Styles pour ListeNappes */
+QWidget#ListeNappes {
+    background-color: transparent;
+}

@@ -1,0 +1,4 @@
+/* Styles pour Visualisation */
+QWidget#Visualisation {
+    background-color: transparent;
+}

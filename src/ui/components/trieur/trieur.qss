@@ -1,0 +1,4 @@
+/* Styles pour Trieur */
+QWidget#Trieur {
+    background-color: transparent;
+}

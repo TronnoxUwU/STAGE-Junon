@@ -1,0 +1,4 @@
+/* Styles pour Resultat */
+QWidget#Resultat {
+    background-color: transparent;
+}
