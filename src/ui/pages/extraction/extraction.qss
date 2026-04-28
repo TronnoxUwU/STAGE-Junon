@@ -1,4 +1,61 @@
-/* Styles pour Extraction */
-QWidget#Extraction {
+QLabel#page_title {
+    font-size: 20px;
+    font-weight: bold;
+    color: #cdd6f4;
+    padding-bottom: 4px;
+}
+
+QScrollArea {
     background-color: transparent;
+    border: none;
+}
+
+QScrollBar:horizontal {
+    background: transparent;
+    height: 6px;
+}
+
+QScrollBar::handle:horizontal {
+    background: #45475a;
+    border-radius: 3px;
+    min-width: 30px;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background: #585b70;
+}
+
+QScrollBar::add-line:horizontal,
+QScrollBar::sub-line:horizontal {
+    width: 0;
+}
+
+QWidget {
+    background-color: #1e1e2e;
+}
+
+QScrollBar:horizontal  {
+    background: #1e1e2e;
+    width: 10px;
+    margin: 0px;
+}
+
+QScrollBar::handle:horizontal  {
+    background: #45475a;
+    border-radius: 5px;
+    min-height: 20px;
+}
+
+QScrollBar::handle:horizontal :hover {
+    background: #6c7086;
+}
+
+QScrollBar::add-line:horizontal ,
+QScrollBar::sub-line:horizontal  {
+    width: 0px;
+}
+
+QScrollBar::add-page:horizontal ,
+QScrollBar::sub-page:horizontal  {
+    background: none;
 }

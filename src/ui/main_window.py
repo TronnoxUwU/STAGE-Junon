@@ -2,10 +2,13 @@ from PySide6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QStackedWidget
 import os
 
 from .pages import Clusterisation, Configuration, Extraction, Resultat, Visualisation
+from PySide6.QtCore import Signal
 from .components.sidebar import Sidebar
 
 
 class MainWindow(QMainWindow):
+    config_changed = Signal(dict)
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Application")
@@ -49,6 +52,14 @@ class MainWindow(QMainWindow):
 
         # Page par défaut
         self.navigate_to("extraction")
+        self.pages["configuration"].config_saved.connect(self._on_config_saved)
+
+    def _on_config_saved(self, cfg: dict):
+        self.config = cfg
+        self.config_changed.emit(cfg)
+        for page in self.pages.values():
+            if hasattr(page, "apply_config"):
+                page.apply_config(cfg)
 
     def navigate_to(self, page_name: str):
         if page_name in self.pages:

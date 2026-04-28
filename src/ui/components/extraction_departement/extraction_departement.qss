@@ -1,4 +1,103 @@
-/* Styles pour ExtractionDepartement */
-QWidget#ExtractionDepartement {
+QWidget#dept_card {
+    background-color: #181825;
+    border: 1px solid #313244;
+    border-radius: 12px;
+}
+
+QLabel#dept_title {
+    font-size: 14px;
+    font-weight: bold;
+    color: #cdd6f4;
+}
+
+QPushButton#btn_start {
+    background-color: #a6e3a1;
+    color: #1e1e2e;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: bold;
+    border: none;
+}
+
+QPushButton#btn_start:hover {
+    background-color: #94e2d5;
+}
+
+QPushButton#btn_start:disabled {
+    background-color: #45475a;
+    color: #6c7086;
+}
+
+QTextEdit#dept_console {
+    background-color: #11111b;
+    border: 1px solid #313244;
+    border-radius: 6px;
+    color: #a6adc8;
+    font-family: "Consolas", monospace;
+    font-size: 11px;
+    padding: 4px;
+}
+
+QWidget#dept_card {
+    background-color: #181825;
+    border: 1px solid #313244;
+    border-radius: 12px;
+}
+
+/* Force le fond sur tous les enfants directs */
+QWidget#dept_card > QTextEdit {
     background-color: transparent;
+}
+
+QPushButton#btn_extract {
+    background-color: #89b4fa;
+    color: #1e1e2e;
+    border: none;
+    border-radius: 6px;
+    padding: 8px;
+    font-weight: bold;
+}
+
+QPushButton#btn_extract:hover {
+    background-color: #b4befe;
+}
+
+QPushButton#btn_extract:disabled {
+    background-color: #45475a;
+    color: #6c7086;
+}
+
+QPushButton#btn_fuse {
+    background-color: transparent;
+    color: #a6adc8;
+    border: 1px solid #45475a;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+QPushButton#btn_fuse:enabled {
+    color: #a6e3a1;
+    border: 1px solid #a6e3a1;
+}
+
+QPushButton#btn_fuse:enabled:hover {
+    background-color: #1e1e2e;
+}
+
+QPushButton#btn_fuse:disabled {
+    color: #45475a;
+    border: 1px solid #313244;
+}
+
+QPushButton#btn_existing {
+    background-color: #313244;
+    color: #89b4fa;
+    border: 1px solid #89b4fa;
+    border-radius: 14px;
+    font-size: 12px;
+}
+
+QPushButton#btn_existing:hover {
+    background-color: #89b4fa;
+    color: #1e1e2e;
 }

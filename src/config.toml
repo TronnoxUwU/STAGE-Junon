@@ -1,0 +1,56 @@
+[dossier]
+dossier_extraction = "data/extraction"
+dossier_extraction_tmp = "data/extraction/tmp"
+meteo_name_extraction = "meteo"
+nappe_name_extraction = "nappes"
+etp_name_extraction = "etp"
+impermeabilite_name_extraction = "impermeabilite"
+mailles_name_extraction = "maille"
+communes_name_extraction = "communes"
+dossier_fusion = "data/fusion"
+dossier_nappe_inertielle = "data/clusterisation/inertielle"
+dossier_nappe_reactive = "data/clusterisation/reactive"
+dossier_completion = "data/completion"
+dossier_completion_inertielle = "data/completion/inertielle"
+dossier_completion_reactive = "data/completion/reactive"
+dossier_summary = "data"
+summary_name = "summary.csv"
+dossier_model = "models"
+dossier_scaler = "scaler"
+
+[pipeline]
+departements = [ 45, 46, 48, 28,]
+qualite = 30
+type = []
+extraction = false
+fusion = false
+clusterisation = false
+entrainement = false
+completion = false
+affichage = true
+
+[entrainement_model]
+window_size = 120
+models = [ "CNN", "LSTM", "BILSTM",]
+global = true
+fine_tune = true
+local = false
+
+[fusion]
+PRELIQ_Q = "sum"
+
+[completion.niveau_nappe_eau]
+realiser = true
+methodes = [ "knn_nappe", "lineaire",]
+
+[completion.PRELIQ_Q]
+realiser = false
+methodes = [ "lineaire", "cubique", "global/CNN",]
+
+[completion.T_Q]
+realiser = false
+methodes = []
+
+[completion.ETP_Q]
+realiser = false
+methodes = []
