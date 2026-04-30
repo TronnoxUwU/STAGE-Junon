@@ -243,7 +243,7 @@ def process_nappe(output_folder, name, departements):
     url_chroniques = "https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/chroniques"
 
     # Téléchargement des chroniques pour chaque station
-    for i, (code, lat, lon) in enumerate(codes):
+    for i, (code, lon, lat) in enumerate(codes):
         params = {
             "code_bss": code,
             "size": 20000

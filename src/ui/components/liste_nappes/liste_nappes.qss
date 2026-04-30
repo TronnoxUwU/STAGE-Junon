@@ -1,4 +1,39 @@
-/* Styles pour ListeNappes */
-QWidget#ListeNappes {
+QWidget#liste_nappes_panel {
+    background-color: #181825;
+    border-right: 1px solid #313244;
+}
+
+QLabel#panel_title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #cdd6f4;
+    padding-bottom: 4px;
+}
+
+QLineEdit#nappe_search {
+    background-color: #1e1e2e;
+    border: 1px solid #45475a;
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: #cdd6f4;
+}
+
+QListWidget#nappe_list_view {
     background-color: transparent;
+    border: none;
+    color: #cdd6f4;
+}
+
+QListWidget#nappe_list_view::item {
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+QListWidget#nappe_list_view::item:hover {
+    background-color: #313244;
+}
+
+QListWidget#nappe_list_view::item:selected {
+    background-color: #45475a;
+    color: #89b4fa;
 }

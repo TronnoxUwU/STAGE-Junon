@@ -51,7 +51,7 @@ class MainWindow(QMainWindow):
             self.stack.addWidget(page)
 
         # Page par défaut
-        self.navigate_to("extraction")
+        self.navigate_to("configuration")
         self.pages["configuration"].config_saved.connect(self._on_config_saved)
 
     def _on_config_saved(self, cfg: dict):
@@ -65,3 +65,6 @@ class MainWindow(QMainWindow):
         if page_name in self.pages:
             self.stack.setCurrentWidget(self.pages[page_name])
             self.sidebar._set_active(page_name)
+
+            if page_name == "visualisation":
+                self.pages[page_name].load_config_if_exists()

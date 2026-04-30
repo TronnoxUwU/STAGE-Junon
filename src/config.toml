@@ -19,14 +19,14 @@ dossier_model = "models"
 dossier_scaler = "scaler"
 
 [pipeline]
-departements = [ 45, 46, 48, 28,]
+departements = [ 45,]
 qualite = 30
-type = []
+type = [ "reactive", "inertielle",]
 extraction = false
-fusion = false
-clusterisation = false
-entrainement = false
-completion = false
+fusion = true
+clusterisation = true
+entrainement = true
+completion = true
 affichage = true
 
 [entrainement_model]
@@ -44,13 +44,13 @@ realiser = true
 methodes = [ "knn_nappe", "lineaire",]
 
 [completion.PRELIQ_Q]
-realiser = false
-methodes = [ "lineaire", "cubique", "global/CNN",]
+realiser = true
+methodes = [ "lineaire", "cubique", "global/CNN", "lineaire",]
 
 [completion.T_Q]
-realiser = false
-methodes = []
+realiser = true
+methodes = [ "lineaire", "cubique", "global/CNN", "lineaire",]
 
 [completion.ETP_Q]
-realiser = false
-methodes = []
+realiser = true
+methodes = [ "lineaire", "cubique", "global/CNN", "lineaire",]

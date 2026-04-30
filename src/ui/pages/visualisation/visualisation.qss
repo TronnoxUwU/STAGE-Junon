@@ -1,4 +1,29 @@
-/* Styles pour Visualisation */
-QWidget#Visualisation {
+QWidget#visu_right {
+    background-color: #1e1e2e;
+}
+
+QWidget#toggle_bar {
+    background-color: #181825;
+    border-bottom: 1px solid #313244;
+}
+
+QPushButton#btn_toggle {
     background-color: transparent;
+    color: #a6adc8;
+    border: 1px solid #45475a;
+    border-radius: 6px;
+    padding: 6px 16px;
+}
+
+QPushButton#btn_toggle:hover {
+    background-color: #313244;
+}
+
+QPushButton#btn_toggle_active {
+    background-color: #313244;
+    color: #89b4fa;
+    border: 1px solid #89b4fa;
+    border-radius: 6px;
+    padding: 6px 16px;
+    font-weight: bold;
 }

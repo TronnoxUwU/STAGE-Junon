@@ -1,4 +1,43 @@
-/* Styles pour VisualisationDonnee */
-QWidget#VisualisationDonnee {
+QWidget {
+    background-color: #1e1e2e;
+}
+
+QLabel#chart_label {
+    color: #a6adc8;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 4px 0;
+}
+
+QWidget#constants_card {
+    background-color: #181825;
+    border: 1px solid #313244;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+QLabel#const_name {
+    color: #6c7086;
+    font-size: 11px;
+}
+
+QLabel#const_value {
+    color: #cdd6f4;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+QScrollArea {
     background-color: transparent;
+    border: none;
+}
+
+QScrollBar:vertical {
+    background: transparent;
+    width: 6px;
+}
+
+QScrollBar::handle:vertical {
+    background: #45475a;
+    border-radius: 3px;
 }
