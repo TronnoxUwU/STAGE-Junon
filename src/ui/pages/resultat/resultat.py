@@ -10,7 +10,6 @@ import pandas as pd
 
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "..", "config.toml")
 
-
 # ─────────────────────────────────────────────
 #  Worker
 # ─────────────────────────────────────────────
@@ -165,6 +164,7 @@ class HeatmapWidget(QWidget):
 
         # Corps
         self.body = QWidget()
+        self.body.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         body_layout = QVBoxLayout(self.body)
         body_layout.setContentsMargins(12, 8, 12, 12)
         body_layout.setSpacing(4)
@@ -212,13 +212,9 @@ class HeatmapWidget(QWidget):
                 grid.addWidget(HeatmapCell(val), i + 1, j + 1)
 
         # Scroll horizontal si beaucoup de datasets
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroll.setWidget(grid_widget)
-        layout.addWidget(scroll)
+        grid_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        grid_widget.adjustSize()
+        layout.addWidget(grid_widget)
 
     def _toggle(self):
         self._expanded = not self._expanded
@@ -261,6 +257,7 @@ class GroupeWidget(QWidget):
 
         # Corps — une heatmap par variable
         self.body = QWidget()
+        self.body.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         bl = QVBoxLayout(self.body)
         bl.setContentsMargins(8, 8, 8, 8)
         bl.setSpacing(8)
@@ -292,44 +289,55 @@ class Resultat(QWidget):
 
     def _setup_ui(self):
         self.root = QVBoxLayout(self)
-        self.root.setContentsMargins(24, 24, 24, 24)
-        self.root.setSpacing(16)
+        self.root.setContentsMargins(0, 0, 0, 0)
+        self.root.setSpacing(0)
 
         title = QLabel("Résultats & Complétion")
         title.setObjectName("page_title")
-        self.root.addWidget(title)
+
+        # Tout dans un seul scroll vertical
+        self.scroll = QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setFrameShape(QFrame.NoFrame)
+        self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        self.scroll_container = QWidget()
+        self.scroll_container.setAttribute(Qt.WA_StyledBackground, True)
+        inner = QVBoxLayout(self.scroll_container)
+        inner.setContentsMargins(24, 24, 24, 24)
+        inner.setSpacing(16)
+
+        inner.addWidget(title)
 
         # Zone lancement
         self.launch_zone = QWidget()
         lz = QVBoxLayout(self.launch_zone)
         lz.setAlignment(Qt.AlignCenter)
         lz.setSpacing(12)
-
         self.btn_launch = QPushButton("Lancer la complétion")
         self.btn_launch.setObjectName("btn_primary")
         self.btn_launch.setFixedWidth(240)
         self.btn_launch.clicked.connect(self._start)
         lz.addWidget(self.btn_launch, alignment=Qt.AlignCenter)
-
         self.log_label = QLabel("")
         self.log_label.setObjectName("log_label")
         self.log_label.setAlignment(Qt.AlignCenter)
         self.log_label.setWordWrap(True)
         lz.addWidget(self.log_label)
+        inner.addWidget(self.launch_zone)
 
-        self.root.addWidget(self.launch_zone)
-
-        # Zone résultats
-        self.result_zone = QScrollArea()
-        self.result_zone.setWidgetResizable(True)
-        self.result_zone.setFrameShape(QFrame.NoFrame)
+        # Zone résultats (plus de QScrollArea ici)
+        self.result_zone = QWidget()
         self.result_zone.setVisible(False)
-        self.result_container = QWidget()
-        self.result_layout    = QVBoxLayout(self.result_container)
+        self.result_layout = QVBoxLayout(self.result_zone)
+        self.result_layout.setContentsMargins(0, 0, 0, 0)
         self.result_layout.setSpacing(12)
         self.result_layout.addStretch()
-        self.result_zone.setWidget(self.result_container)
-        self.root.addWidget(self.result_zone)
+        inner.addWidget(self.result_zone)
+
+        #inner.addStretch()
+        self.scroll.setWidget(self.scroll_container)
+        self.root.addWidget(self.scroll)
 
     def _load_config_if_exists(self):
         if os.path.exists(CONFIG_PATH):

@@ -19,7 +19,7 @@ dossier_model = "models"
 dossier_scaler = "scaler"
 
 [pipeline]
-departements = [ 45,]
+departements = [ 45, 46, 28,]
 qualite = 30
 type = [ "reactive", "inertielle",]
 extraction = false
